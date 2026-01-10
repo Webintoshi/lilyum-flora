@@ -1,0 +1,182 @@
+[
+  {
+    "id": "1",
+    "title": "Home Page Loads Successfully",
+    "description": "Verify that the home page loads correctly and displays content",
+    "steps": [
+      "Navigate to http://localhost:5173/",
+      "Wait for page to load completely",
+      "Verify page title and content are visible",
+      "Check that banner and featured products are displayed"
+    ],
+    "expected_result": "Home page loads with banner and featured products visible"
+  },
+  {
+    "id": "2",
+    "title": "Navigation Menu Functional",
+    "description": "Verify navigation links work correctly",
+    "steps": [
+      "Navigate to home page",
+      "Click on Catalog navigation link",
+      "Verify navigation to /catalog page",
+      "Check that product catalog displays"
+    ],
+    "expected_result": "Successfully navigates to catalog page with products visible"
+  },
+  {
+    "id": "3",
+    "title": "Product Catalog Displays Products",
+    "description": "Verify product catalog shows products correctly",
+    "steps": [
+      "Navigate to /catalog",
+      "Wait for products to load",
+      "Verify product cards are displayed",
+      "Check product images, names and prices are visible"
+    ],
+    "expected_result": "Products are displayed with proper formatting and details"
+  },
+  {
+    "id": "4",
+    "title": "Product Detail Page Loads",
+    "description": "Verify product detail page shows complete information",
+    "steps": [
+      "Navigate to /catalog",
+      "Click on a product card",
+      "Verify product detail page loads",
+      "Check product details, images and options are visible"
+    ],
+    "expected_result": "Product detail page shows complete product information"
+  },
+  {
+    "id": "5",
+    "title": "Add to Cart from Product Detail",
+    "description": "Verify products can be added to cart",
+    "steps": [
+      "Navigate to product detail page",
+      "Select product options if available",
+      "Click 'Add to Cart' button",
+      "Verify cart side drawer opens",
+      "Check that product appears in cart"
+    ],
+    "expected_result": "Product added to cart successfully and cart drawer opens"
+  },
+  {
+    "id": "6",
+    "title": "Side Cart Opens and Displays Items",
+    "description": "Verify side cart functionality",
+    "steps": [
+      "Add a product to cart",
+      "Verify side cart drawer opens automatically",
+      "Check cart contents display correctly",
+      "Verify product quantity and price shown"
+    ],
+    "expected_result": "Side cart displays added product with correct details"
+  },
+  {
+    "id": "7",
+    "title": "Navigate to Checkout",
+    "description": "Verify checkout navigation works",
+    "steps": [
+      "Open cart with items",
+      "Click 'Checkout' button in cart",
+      "Verify navigation to /checkout page",
+      "Check checkout form is displayed"
+    ],
+    "expected_result": "Navigates to checkout page with order summary"
+  },
+  {
+    "id": "8",
+    "title": "Login Page Loads",
+    "description": "Verify login page displays correctly",
+    "steps": [
+      "Navigate to /login",
+      "Verify login form is visible",
+      "Check email and password fields exist",
+      "Verify login button is present"
+    ],
+    "expected_result": "Login page displays email and password fields with submit button"
+  },
+  {
+    "id": "9",
+    "title": "Register Page Loads",
+    "description": "Verify registration page displays correctly",
+    "steps": [
+      "Navigate to /register",
+      "Verify registration form is visible",
+      "Check required form fields exist",
+      "Verify register button is present"
+    ],
+    "expected_result": "Registration page displays required fields and submit button"
+  },
+  {
+    "id": "10",
+    "title": "Profile Page Access",
+    "description": "Verify user profile page loads",
+    "steps": [
+      "Navigate to /profile",
+      "Verify profile information displays",
+      "Check user details are shown",
+      "Verify navigation options exist"
+    ],
+    "expected_result": "Profile page shows user information and account options"
+  },
+  {
+    "id": "11",
+    "title": "Order History Access",
+    "description": "Verify order history displays",
+    "steps": [
+      "Navigate to /profile/orders",
+      "Verify order history displays",
+      "Check past orders are listed",
+      "Verify order details are accessible"
+    ],
+    "expected_result": "Order history shows past orders with details"
+  },
+  {
+    "id": "12",
+    "title": "Admin Login Page Loads",
+    "description": "Verify admin login page displays correctly",
+    "steps": [
+      "Navigate to /admin/login",
+      "Verify admin login form is visible",
+      "Check email and password fields exist",
+      "Verify login button is present"
+    ],
+    "expected_result": "Admin login page displays correctly with authentication form"
+  },
+  {
+    "id": "13",
+    "title": "Protected Routes Require Authentication",
+    "description": "Verify admin routes redirect to login when not authenticated",
+    "steps": [
+      "Try to access /admin/dashboard without logging in",
+      "Verify redirect to admin login page",
+      "Check that protected content is not accessible"
+    ],
+    "expected_result": "Redirected to admin login page, protected route blocked"
+  },
+  {
+    "id": "14",
+    "title": "Bottom Navigation Visible",
+    "description": "Verify bottom navigation bar is present and functional",
+    "steps": [
+      "Navigate to any page",
+      "Verify bottom navigation bar is present",
+      "Check navigation icons are visible",
+      "Verify icons are clickable"
+    ],
+    "expected_result": "Bottom navigation displays with all icons and is functional"
+  },
+  {
+    "id": "15",
+    "title": "Flower Animation Visible",
+    "description": "Verify flower animation renders on pages",
+    "steps": [
+      "Navigate to home page",
+      "Wait for page to load completely",
+      "Verify flower animation displays",
+      "Check animation is smooth and non-intrusive"
+    ],
+    "expected_result": "Flower animation renders on page without issues"
+  }
+]

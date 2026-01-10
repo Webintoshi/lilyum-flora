@@ -1,0 +1,139 @@
+{
+  "meta": {
+    "project": "Lilyum Flora",
+    "date": "2026-01-09",
+    "prepared_by": "Software Development Manager"
+  },
+  "product_overview": "Lilyum Flora is an e-commerce platform specializing in premium floral products and related services, offering an engaging and seamless shopping experience with a modern, responsive UI and comprehensive user and admin features.",
+  "core_goals": [
+    "Provide an intuitive and visually appealing product browsing experience focused on floral products.",
+    "Enable users to seamlessly register, authenticate, manage profiles, and complete purchases.",
+    "Offer robust order management, including history and tracking, to both users and administrators.",
+    "Equip admins with comprehensive management tools for products, orders, customers, categories, and marketing assets.",
+    "Deliver a responsive, interactive UI enhanced with flower-themed animations and effects for engaging user experience.",
+    "Integrate secure and scalable backend services using modern technologies and third-party platforms like Supabase and Vercel."
+  ],
+  "key_features": [
+    "User Features: Product catalog browsing, detailed product pages, shopping cart, checkout process, user authentication (login/register), user profile management, order history and tracking, wishlist, address management, and contact form.",
+    "Admin Features: Admin login, dashboard overview, management of products, orders, customers, categories, banners, SEO settings, scraper tools, and general settings.",
+    "UI Features: Flower animation effects, magic dust button effects, side cart drawer, bottom navigation, floating action buttons, and fully responsive design.",
+    "API Integration: RESTful endpoints supporting authentication, admin functions, products, orders, customers, categories, banners, scrapers, SEO, and settings management.",
+    "Third-Party Services: Utilization of Supabase for authentication and database management, and Vercel for deployment."
+  ],
+  "user_flow_summary": [
+    "Users visit the home page displaying banner and featured products with flower animations.",
+    "Users browse the product catalog via the /catalog page.",
+    "Users navigate to individual product detail pages from the catalog.",
+    "Authenticated users can add products to a side drawer shopping cart and proceed to checkout.",
+    "Users register or login through dedicated pages and manage their profiles.",
+    "Users can view their order history and track ongoing orders via their profile.",
+    "Users manage their wishlist and saved addresses for quicker checkout.",
+    "Users contact customer service through the contact form page.",
+    "Admin users login to a dedicated admin panel to manage products, orders, customers, and marketing components via various dashboard pages."
+  ],
+  "validation_criteria": [
+    "All user interface components are responsive and visually consistent across supported devices and screen sizes.",
+    "User authentication and authorization flows function securely and support full registration and login workflows.",
+    "Shopping cart and checkout processes complete successfully with accurate order creation and state updates.",
+    "Admin dashboard features allow CRUD operations on products, orders, customers, categories, banners, and settings.",
+    "API endpoints respond correctly to requests with proper validation, error handling, and data persistence.",
+    "Third-party authentication and database integrations with Supabase perform reliably under load.",
+    "UI animation and interactive effects render smoothly without degrading user experience.",
+    "Deployment and development server setups follow configured ports and commands for consistent developer experience."
+  ],
+  "code_summary": {
+    "project_name": "Lilyum Flora",
+    "project_type": "e-commerce",
+    "frontend_tech_stack": {
+      "framework": "React",
+      "version": "^18.3.1",
+      "language": "TypeScript",
+      "routing": "react-router-dom ^7.3.0",
+      "build_tool": "Vite ^6.3.5",
+      "styling": "TailwindCSS ^3.4.17",
+      "state_management": "Zustand ^5.0.3"
+    },
+    "backend_tech_stack": {
+      "runtime": "Node.js",
+      "framework": "Express ^4.21.2",
+      "language": "TypeScript"
+    },
+    "database": {
+      "type": "Supabase",
+      "version": "^2.90.1"
+    },
+    "dev_server": {
+      "frontend_port": 5173,
+      "backend_port": 3001,
+      "dev_command": "npm run dev"
+    },
+    "key_features": {
+      "user_features": [
+        "Product catalog browsing",
+        "Product detail pages",
+        "Shopping cart",
+        "Checkout process",
+        "User authentication (login/register)",
+        "User profile management",
+        "Order history",
+        "Order tracking",
+        "Wishlist",
+        "Address management",
+        "Contact form"
+      ],
+      "admin_features": [
+        "Admin login",
+        "Dashboard",
+        "Product management",
+        "Order management",
+        "Customer management",
+        "Category management",
+        "Banner management",
+        "SEO settings",
+        "Scraper tools",
+        "Settings"
+      ],
+      "ui_features": [
+        "Flower animation effects",
+        "Magic dust button effects",
+        "Side cart drawer",
+        "Bottom navigation",
+        "Floating buttons",
+        "Responsive design"
+      ]
+    },
+    "api_endpoints": [
+      "/api/auth",
+      "/api/admin",
+      "/api/banners",
+      "/api/categories",
+      "/api/customers",
+      "/api/dashboard",
+      "/api/heroBanners",
+      "/api/orders",
+      "/api/products",
+      "/api/scrapers",
+      "/api/seo",
+      "/api/settings"
+    ],
+    "main_pages": [
+      "/ - Home",
+      "/catalog - Product catalog",
+      "/product/:id - Product detail",
+      "/cart - Shopping cart",
+      "/checkout - Checkout page",
+      "/login - User login",
+      "/register - User registration",
+      "/profile - User profile",
+      "/wishlist - User wishlist",
+      "/contact - Contact page",
+      "/about - About page",
+      "/landscaping - Landscaping services",
+      "/admin/* - Admin panel routes"
+    ],
+    "third_party_services": [
+      "Supabase (authentication & database)",
+      "Vercel (deployment)"
+    ]
+  }
+}

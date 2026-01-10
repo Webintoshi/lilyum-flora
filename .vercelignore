@@ -1,0 +1,11 @@
+api/modules
+api/store
+api/services
+api/types
+api/server.ts
+api/app.ts
+node_modules
+dist
+.env
+.env.local
+.env.production
