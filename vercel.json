@@ -1,6 +1,12 @@
 {
   "buildCommand": "npm run build && npm run build:api",
   "outputDirectory": "dist",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
