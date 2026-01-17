@@ -1,8 +1,8 @@
 {
-  "status": "commited",
+  "status": "init",
   "type": "frontend",
   "scope": "codebase",
-  "localEndpoint": "http://localhost:5173",
+  "localEndpoint": "http://localhost:5173/",
   "executionArgs": {
     "projectName": "çİÇEKÇİ",
     "projectPath": "c:\\Users\\webin\\OneDrive\\Desktop\\çİÇEKÇİ",
@@ -12,5 +12,6 @@
       "API_KEY": "sk-user-HrIALHLYNy7z4H8fJlQvVV0lIl9M4rRyObi86d7CTRLr5NVhE7BmCD7WHRZoxGmCCuGfnAdI9QGtLq0qtuvlwXns1SCDCIcMal1sdyEx7A6ugMPELZGYnYnF2Lm7uqxrGRU"
     }
   },
-  "proxy": "http://0f2b03c3-1465-41c3-90d7-282333223bac:KDKNOnm6h9PYk8Z2RuISenfY1CLEuMM5@tun.testsprite.com:8080"
+  "proxy": "http://0f2b03c3-1465-41c3-90d7-282333223bac:KDKNOnm6h9PYk8Z2RuISenfY1CLEuMM5@tun.testsprite.com:8080",
+  "serverPort": 60936
 }

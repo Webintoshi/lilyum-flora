@@ -4,7 +4,7 @@ import { useAdminStore } from '@/store/adminStore'
 import type { Category } from '@/types'
 
 export default function CategorySettings() {
-  const { categories, fetchCategories, createCategory, updateCategory, deleteCategory } = useAdminStore()
+  const { categories, fetchCategories, createCategory, updateCategory, deleteCategory, uploadFile } = useAdminStore()
   const [formData, setFormData] = useState<Partial<Category>>({
     name: '',
     slug: '',
@@ -16,6 +16,7 @@ export default function CategorySettings() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
+  const [uploadingImage, setUploadingImage] = useState(false)
 
   useEffect(() => {
     fetchCategories()
@@ -30,7 +31,7 @@ export default function CategorySettings() {
     setSaving(true)
     try {
       if (editingId) {
-        await updateCategory(editingId, formData)
+        await updateCategory({ ...formData, id: editingId } as Category)
       } else {
         await createCategory(formData as Omit<Category, 'id' | 'productCount' | 'createdAt' | 'updatedAt'>)
       }
@@ -63,7 +64,7 @@ export default function CategorySettings() {
   }
 
   const handleToggleActive = async (category: Category) => {
-    await updateCategory(category.id, { isActive: !category.isActive })
+    await updateCategory({ ...category, isActive: !category.isActive })
   }
 
   const resetForm = () => {
@@ -171,27 +172,50 @@ export default function CategorySettings() {
             </div>
 
             <div>
-              <label htmlFor="image" className="block text-sm font-medium text-gray-700 mb-2">
-                Görsel URL
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Görsel
               </label>
-              <div className="relative">
-                <input
-                  id="image"
-                  type="text"
-                  value={formData.image || ''}
-                  onChange={(e) => handleChange('image', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 pr-10"
-                  placeholder="https://example.com/category-image.jpg"
-                />
-                <button
-                  onClick={() => {
-                    const url = prompt('Görsel URL\'sini girin:', formData.image)
-                    if (url) handleChange('image', url)
-                  }}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-primary-600 transition-colors"
-                >
-                  <ImageIcon className="w-4 h-4" />
-                </button>
+              <div className="flex gap-4">
+                <div className="flex-1">
+                  <label htmlFor="imageFile" className="block">
+                    <span className="sr-only">Görsel dosyası seç</span>
+                    <div className="flex items-center justify-center w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-primary-500 hover:bg-primary-50 transition-colors">
+                      <Upload className="w-5 h-5 text-gray-400 mr-2" />
+                      <span className="text-sm text-gray-600">
+                        {uploadingImage ? 'Yükleniyor...' : 'Dosya seç'}
+                      </span>
+                    </div>
+                  </label>
+                  <input
+                    id="imageFile"
+                    type="file"
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0]
+                      if (!file) return
+                      setUploadingImage(true)
+                      try {
+                        const url = await uploadFile(file)
+                        handleChange('image', url)
+                      } catch (err) {
+                        console.error('Görsel yükleme hatası:', err)
+                      } finally {
+                        setUploadingImage(false)
+                      }
+                    }}
+                    className="hidden"
+                    disabled={uploadingImage}
+                  />
+                </div>
+                {formData.image && (
+                  <div className="w-20 h-20 flex items-center justify-center bg-white border border-gray-200 rounded-lg overflow-hidden">
+                    <img
+                      src={formData.image}
+                      alt="Görsel Preview"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
               </div>
             </div>
 
@@ -305,9 +329,8 @@ export default function CategorySettings() {
             categories.map((category) => (
               <div
                 key={category.id}
-                className={`flex items-center gap-4 p-4 border-2 rounded-lg transition-all ${
-                  category.isActive ? 'border-green-500 bg-green-50' : 'border-gray-200'
-                }`}
+                className={`flex items-center gap-4 p-4 border-2 rounded-lg transition-all ${category.isActive ? 'border-green-500 bg-green-50' : 'border-gray-200'
+                  }`}
               >
                 <div className="relative w-24 h-24 flex-shrink-0 rounded-lg overflow-hidden bg-white">
                   {category.image ? (
@@ -339,9 +362,8 @@ export default function CategorySettings() {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => handleToggleActive(category)}
-                        className={`p-2 rounded-lg transition-colors ${
-                          category.isActive ? 'text-green-600 bg-green-100' : 'text-gray-600 bg-gray-100'
-                        }`}
+                        className={`p-2 rounded-lg transition-colors ${category.isActive ? 'text-green-600 bg-green-100' : 'text-gray-600 bg-gray-100'
+                          }`}
                         title={category.isActive ? 'Aktif' : 'Pasif'}
                       >
                         {category.isActive ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}

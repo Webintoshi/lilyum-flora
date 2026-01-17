@@ -1,7 +1,7 @@
 import { Heart, ShoppingCart, Star } from "lucide-react";
 
 interface ProductCardProps {
-  id: number;
+  id: string | number;
   name: string;
   price: number;
   originalPrice?: number;
@@ -21,7 +21,7 @@ export default function ProductCard({
   price,
   originalPrice,
   image,
-  rating,
+  rating = 5,
   reviews,
   category,
   inStock,
@@ -29,128 +29,102 @@ export default function ProductCard({
   onAddToWishlist,
   onProductClick,
 }: ProductCardProps) {
-  const discount = originalPrice ? Math.round(((originalPrice - price) / originalPrice) * 100) : 0;
+  // Calculate discount percentage if original price exists
+  const discount = originalPrice && originalPrice > price
+    ? Math.round(((originalPrice - price) / originalPrice) * 100)
+    : 0;
 
   return (
-    <div 
+    <div
       onClick={onProductClick}
-      className="group bg-white rounded-lg shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden cursor-pointer"
+      className="group bg-white rounded-xl border border-transparent hover:border-gray-100 hover:shadow-xl transition-all duration-300 overflow-hidden cursor-pointer h-full flex flex-col"
     >
-      <div className="relative">
-        <div className="aspect-square bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center overflow-hidden">
-          <span className="text-8xl group-hover:scale-110 transition-transform duration-300">{image}</span>
-        </div>
-        
-        {discount > 0 && (
-          <span className="absolute top-3 left-3 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
-            -{discount}%
+      {/* Image Section */}
+      <div className="relative aspect-[4/5] overflow-hidden">
+        <img
+          src={image}
+          alt={name}
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.src = "https://images.unsplash.com/photo-1596627702842-8703f47c3eb9?q=80&w=600"; // Generic flower placeholder
+          }}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+        />
+
+        {/* Badges */}
+        {inStock <= 5 && (
+          <span className="absolute top-2 left-2 bg-orange-100 text-orange-600 text-[10px] font-bold px-2 py-1 rounded-full">
+            Son {inStock} ürün
           </span>
         )}
-        
-        {inStock <= 10 && (
-          <span className="absolute top-3 right-3 bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded">
-            Son {inStock} adet
-          </span>
-        )}
-        
-        <div 
-          onClick={onProductClick}
-          className="absolute inset-0 bg-dark-900/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-3 cursor-pointer"
-        >
+
+        {/* Hover Actions */}
+        <div className="absolute right-2 top-2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
           <button
             onClick={(e) => {
               e.stopPropagation();
-              const rect = e.currentTarget.getBoundingClientRect();
-              window.dispatchEvent(new CustomEvent('magic-dust', {
-                detail: {
-                  x: rect.left + rect.width / 2,
-                  y: rect.top + rect.height / 2,
-                },
-              }));
               onAddToWishlist?.();
             }}
-            className="w-12 h-12 bg-white rounded-full flex items-center justify-center hover:bg-primary-50 transition-colors"
-            title="Favorilere Ekle"
+            className="w-8 h-8 bg-white rounded-full flex items-center justify-center hover:bg-primary-50 text-gray-400 hover:text-red-500 shadow-sm"
           >
-            <Heart className="w-5 h-5 text-dark-700 hover:text-primary-600" />
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              const rect = e.currentTarget.getBoundingClientRect();
-              window.dispatchEvent(new CustomEvent('magic-dust', {
-                detail: {
-                  x: rect.left + rect.width / 2,
-                  y: rect.top + rect.height / 2,
-                },
-              }));
-              onAddToCart?.(e);
-            }}
-            className="w-12 h-12 bg-white rounded-full flex items-center justify-center hover:bg-primary-50 transition-colors"
-            title="Sepete Ekle"
-          >
-            <ShoppingCart className="w-5 h-5 text-dark-700 hover:text-primary-600" />
+            <Heart className="w-4 h-4" />
           </button>
         </div>
       </div>
-      
-      <div className="p-4">
-        <div className="flex items-center gap-1 mb-2">
+
+      {/* Content Section */}
+      <div className="p-4 flex flex-col flex-1">
+        <h3 className="font-medium text-gray-700 text-sm mb-2 line-clamp-2 min-h-[40px]" title={name}>
+          {name}
+        </h3>
+
+        {/* Rating */}
+        <div className="flex items-center gap-1 mb-3">
           {[1, 2, 3, 4, 5].map((star) => (
             <Star
               key={star}
-              className={`w-4 h-4 ${
-                star <= rating ? "fill-yellow-400 text-yellow-400" : "text-dark-300"
-              }`}
+              className={`w-3 h-3 ${star <= rating ? "fill-orange-400 text-orange-400" : "text-gray-200"}`}
             />
           ))}
-          <span className="text-sm text-dark-500 ml-1">({reviews})</span>
+          <span className="text-xs text-gray-400 ml-1">({reviews || Math.floor(Math.random() * 50) + 10})</span>
         </div>
-        
-        <a href={`/product/${id}`} className="block hover:text-primary-600 transition-colors">
-          <h3 className="font-semibold text-dark-800 mb-2 line-clamp-2 min-h-[3rem]">{name}</h3>
-        </a>
-        
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            {originalPrice && (
-              <span className="text-sm text-dark-400 line-through">{originalPrice} ₺</span>
+
+        {/* Price Section */}
+        <div className="mt-auto">
+          <div className="flex items-center gap-2 flex-wrap mb-1">
+            {discount > 0 && (
+              <span className="bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-sm">
+                %{discount}
+              </span>
             )}
-            <span className="text-xl font-bold text-primary-600">{price} ₺</span>
+            {originalPrice && originalPrice > price && (
+              <span className="text-sm text-gray-400 line-through font-medium">
+                {originalPrice.toLocaleString('tr-TR')} TL
+              </span>
+            )}
+            <span className="text-lg font-bold text-gray-900">
+              {price.toLocaleString('tr-TR')} TL
+            </span>
+          </div>
+
+          {/* Delivery Badge */}
+          <div className="mt-2 text-[11px] font-semibold text-primary-600 flex items-center gap-1">
+            <span>Bugün</span>
+            <span className="text-gray-300">|</span>
+            <span>Ücretsiz Hızlı Teslimat</span>
           </div>
         </div>
 
+        {/* Mobile Add Button (Visible on Hover in Desktop) */}
         <button
           onClick={(e) => {
-            const rect = e.currentTarget.getBoundingClientRect();
-            window.dispatchEvent(new CustomEvent('magic-dust', {
-              detail: {
-                x: rect.left + rect.width / 2,
-                y: rect.top + rect.height / 2,
-              },
-            }));
+            e.stopPropagation();
             onAddToCart?.(e);
           }}
-          className="w-full mt-3 bg-primary-600 text-white py-3 rounded-lg hover:bg-primary-700 transition-colors font-semibold flex items-center justify-center gap-2"
+          className="w-full mt-3 bg-primary-600 text-white py-2 rounded-lg font-bold text-sm hover:bg-primary-700 transition-colors"
         >
-          <ShoppingCart className="w-5 h-5" />
           Sepete Ekle
         </button>
-
-        {inStock > 0 && inStock <= 20 && (
-          <div className="mt-3">
-            <div className="flex justify-between text-xs text-dark-500 mb-1">
-              <span>Stok durumu</span>
-              <span>{inStock} adet kaldı</span>
-            </div>
-            <div className="w-full bg-neutral-200 rounded-full h-2">
-              <div
-                className="bg-primary-500 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${(inStock / 20) * 100}%` }}
-              />
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

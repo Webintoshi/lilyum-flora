@@ -1,95 +1,81 @@
-import { CheckCircle, ShoppingBag, Home } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { CheckCircle, ShoppingBag, Home, ArrowRight } from "lucide-react";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 
 export default function CheckoutSuccess() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const orderNumber = searchParams.get('order');
+
   return (
-    <div className="min-h-screen bg-white">
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <a href="/" className="text-2xl font-bold text-pink-500">Lilyum Flora</a>
+    <div className="min-h-screen bg-white font-sans flex flex-col">
+      <Header />
+
+      <main className="flex-grow flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gray-50">
+        <div className="max-w-3xl w-full space-y-8">
+
+          <div className="bg-white rounded-3xl shadow-xl overflow-hidden">
+            {/* Top Success Banner */}
+            <div className="bg-primary-600 p-8 text-center">
+              <div className="mx-auto flex items-center justify-center h-24 w-24 rounded-full bg-white/20 backdrop-blur-md mb-4 shadow-lg">
+                <CheckCircle className="h-12 w-12 text-white" />
+              </div>
+              <h1 className="text-3xl font-bold text-white mb-2">
+                Siparişiniz Alındı!
+              </h1>
+              <p className="text-primary-100 text-lg">
+                Bizi tercih ettiğiniz için teşekkür ederiz.
+              </p>
             </div>
-            <nav className="hidden md:flex space-x-8">
-              <a href="/" className="text-gray-700 hover:text-pink-500 transition-colors">Ana Sayfa</a>
-              <a href="/catalog" className="text-gray-700 hover:text-pink-500 transition-colors">Katalog</a>
-              <a href="/contact" className="text-gray-700 hover:text-pink-500 transition-colors">İletişim</a>
-            </nav>
-          </div>
-        </div>
-      </header>
 
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="bg-white rounded-lg shadow-lg p-12 text-center">
-          <div className="mb-8">
-            <CheckCircle className="w-24 h-24 text-green-500 mx-auto" />
-          </div>
-          
-          <h1 className="text-4xl font-bold text-gray-800 mb-4">
-            Siparişiniz Başarıyla Alındı!
-          </h1>
-          
-          <p className="text-xl text-gray-600 mb-8">
-            Sipariş numaranız: <span className="font-bold text-pink-500">#LF12345</span>
-          </p>
+            <div className="p-8 md:p-12">
+              <div className="text-center mb-10">
+                <p className="text-gray-500 mb-2">Sipariş Numaranız</p>
+                <div className="inline-block bg-gray-100 rounded-lg px-6 py-3 border border-gray-200 border-dashed">
+                  <span className="text-2xl font-mono font-bold text-gray-800 tracking-wider select-all">
+                    {orderNumber || '#------'}
+                  </span>
+                </div>
+              </div>
 
-          <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-8">
-            <h2 className="text-lg font-semibold text-green-800 mb-2">
-              Teslimat Bilgileri
-            </h2>
-            <p className="text-green-700">
-              Siparişiniz <strong>bugün</strong> hazırlanacak ve <strong>60 dakika içinde</strong> kapınıza teslim edilecektir.
-            </p>
-          </div>
+              <div className="bg-green-50 border border-green-100 rounded-2xl p-6 mb-8 text-center">
+                <h3 className="text-green-800 font-bold mb-2">Teslimat Bilgilendirmesi</h3>
+                <p className="text-green-700 text-sm">
+                  Siparişiniz ekibimiz tarafından en taze çiçeklerle hazırlanıp, seçtiğiniz zaman diliminde teslim edilecektir.
+                </p>
+              </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 text-left">
-            <div className="bg-gray-50 rounded-lg p-6">
-              <h3 className="font-semibold text-gray-800 mb-3">Sipariş Detayları</h3>
-              <div className="space-y-2 text-gray-600">
-                <p><strong>Sipariş No:</strong> #LF12345</p>
-                <p><strong>Tarih:</strong> 08.01.2024</p>
-                <p><strong>Ödeme Yöntemi:</strong> Kredi Kartı</p>
-                <p><strong>Toplam Tutar:</strong> 900 ₺</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <button
+                  onClick={() => navigate('/catalog')}
+                  className="w-full flex items-center justify-center px-8 py-4 border border-transparent text-base font-bold rounded-xl text-white bg-primary-600 hover:bg-primary-700 md:text-lg md:px-10 transition-all shadow-lg shadow-primary-600/30"
+                >
+                  <ShoppingBag className="w-5 h-5 mr-2" />
+                  Alışverişe Devam Et
+                </button>
+                <button
+                  onClick={() => navigate('/')}
+                  className="w-full flex items-center justify-center px-8 py-4 border-2 border-gray-100 text-base font-bold rounded-xl text-gray-700 bg-white hover:bg-gray-50 hover:border-gray-200 md:text-lg md:px-10 transition-all"
+                >
+                  <Home className="w-5 h-5 mr-2" />
+                  Ana Sayfa
+                </button>
               </div>
             </div>
-            <div className="bg-gray-50 rounded-lg p-6">
-              <h3 className="font-semibold text-gray-800 mb-3">Teslimat Adresi</h3>
-              <div className="space-y-2 text-gray-600">
-                <p><strong>Ad Soyad:</strong> Ahmet Yılmaz</p>
-                <p><strong>Telefon:</strong> 0532 123 45 67</p>
-                <p><strong>Adres:</strong> Kadıköy, İstanbul</p>
-                <p><strong>Teslimat:</strong> Bugün, 12:00-15:00</p>
+
+            <div className="bg-gray-50 px-8 py-6 border-t border-gray-100">
+              <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+                <p>Sipariş durumu hakkında SMS ve E-posta ile bilgilendirileceksiniz.</p>
               </div>
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <a
-              href="/order/LF12345"
-              className="flex items-center justify-center bg-pink-500 text-white px-8 py-4 rounded-lg hover:bg-pink-600 transition-colors font-semibold"
-            >
-              <ShoppingBag className="w-5 h-5 mr-2" />
-              Siparişi Takip Et
-            </a>
-            <a
-              href="/"
-              className="flex items-center justify-center border-2 border-pink-500 text-pink-500 px-8 py-4 rounded-lg hover:bg-pink-50 transition-colors font-semibold"
-            >
-              <Home className="w-5 h-5 mr-2" />
-              Ana Sayfaya Dön
-            </a>
-          </div>
-
-          <p className="mt-8 text-sm text-gray-500">
-            Onay bilgileri e-posta adresinize gönderildi. Sorularınız için bize ulaşabilirsiniz.
-          </p>
         </div>
       </main>
 
-      <footer className="bg-gray-800 text-white py-8 px-4">
-        <div className="max-w-7xl mx-auto text-center text-gray-400">
-          <p>&copy; 2024 Lilyum Flora. Tüm hakları saklıdır.</p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

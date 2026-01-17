@@ -10,7 +10,7 @@ export default function ProductList() {
   const [searchTerm, setSearchTerm] = useState('')
   const [sortField, setSortField] = useState<keyof Product | null>(null)
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
-  const [filterCategory, setFilterCategory] = useState<number | 'all'>('all')
+  const [filterCategory, setFilterCategory] = useState<string | 'all'>('all')
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all')
 
   useEffect(() => {
@@ -26,11 +26,19 @@ export default function ProductList() {
     }
   }
 
-  const filteredProducts = products
+  // Defensively filter products
+  const safeProducts = Array.isArray(products) ? products : [];
+
+  const filteredProducts = safeProducts
     .filter((product) => {
+      // Safe access
+      if (!product) return false;
+      const name = product.name || '';
+      const slug = product.slug || '';
+
       const matchesSearch =
-        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (product.slug && product.slug.toLowerCase().includes(searchTerm.toLowerCase()))
+        name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        slug.toLowerCase().includes(searchTerm.toLowerCase())
 
       const matchesCategory = filterCategory === 'all' || product.categoryId === filterCategory
 
@@ -59,7 +67,7 @@ export default function ProductList() {
       return 0
     })
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string | number) => {
     if (confirm('Bu ürünü silmek istediğinize emin misiniz?')) {
       await deleteProduct(id)
     }
@@ -73,8 +81,8 @@ export default function ProductList() {
     await updateProduct(product.id, { featured: !product.featured })
   }
 
-  const totalStock = products.reduce((sum, p) => sum + p.stock, 0)
-  const activeProducts = products.filter((p) => p.isActive).length
+  const totalStock = safeProducts.reduce((sum, p) => sum + (p.stock || 0), 0)
+  const activeProducts = safeProducts.filter((p) => p.isActive).length
 
   const getImageUrl = (product: Product) => {
     return product.images && product.images.length > 0 ? product.images[0] : product.image
@@ -96,7 +104,7 @@ export default function ProductList() {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
         <div className="bg-white rounded-xl shadow-sm p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -163,15 +171,15 @@ export default function ProductList() {
 
           <select
             value={filterCategory}
-            onChange={(e) => setFilterCategory(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
+            onChange={(e) => setFilterCategory(e.target.value)}
             className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
           >
             <option value="all">Tüm Kategoriler</option>
-            {[...new Set(products.map((p) => p.categoryId))].map((categoryId) => {
+            {[...new Set(products.map((p) => p.categoryId).filter(Boolean))].map((categoryId) => {
               const category = products.find((p) => p.categoryId === categoryId)
               return (
                 <option key={categoryId} value={categoryId}>
-                  {category?.category || `Kategori ${categoryId}`}
+                  {typeof category?.category === 'string' ? category.category : (categoryId || 'Kategorisiz')}
                 </option>
               )
             })}
@@ -188,7 +196,69 @@ export default function ProductList() {
           </select>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Mobile View (Cards) */}
+        <div className="md:hidden">
+          {filteredProducts.length === 0 ? (
+            <div className="p-8 text-center text-gray-500">Ürün bulunamadı.</div>
+          ) : (
+            <div className="space-y-4 p-4">
+              {filteredProducts.map((product) => (
+                <div key={product.id} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex gap-4">
+                  <img
+                    src={getImageUrl(product)}
+                    alt={product.name}
+                    className="w-20 h-20 object-cover rounded-lg bg-gray-100"
+                  />
+                  <div className="flex-1 min-w-0 space-y-2">
+                    <div className="flex justify-between items-start gap-4">
+                      <div className="min-w-0 flex-1">
+                        <h3 className="font-bold text-gray-900 truncate">{product.name}</h3>
+                        <div className="text-xs text-gray-500 truncate">
+                          {typeof product.category === 'object' && product.category?.slug
+                            ? (product.category as any).slug
+                            : (product.category as string || product.categoryId)}
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                        <span className="font-bold text-primary-600">₺{product.price.toLocaleString('tr-TR')}</span>
+                        {product.stock <= 5 && (
+                          <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-bold">Son {product.stock}</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between items-center pt-1">
+                      {/* Status Toggle Micro */}
+                      <div
+                        onClick={() => handleToggleActive(product)}
+                        className={`cursor-pointer px-2 py-1 rounded-md text-xs font-bold flex items-center gap-1 ${product.isActive ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'}`}
+                      >
+                        {product.isActive ? 'Aktif' : 'Pasif'}
+                      </div>
+
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => navigate(`/admin/products/${product.id}`)}
+                          className="p-1.5 text-primary-600 bg-primary-50 rounded-lg"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(product.id)}
+                          className="p-1.5 text-red-600 bg-red-50 rounded-lg"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-200">
@@ -233,7 +303,11 @@ export default function ProductList() {
                         />
                         <div>
                           <div className="font-medium text-gray-900">{product.name}</div>
-                          <div className="text-xs text-gray-500">{product.category}</div>
+                          <div className="text-xs text-gray-500">
+                            {typeof product.category === 'object' && product.category?.slug
+                              ? (product.category as any).slug
+                              : (product.category as string || product.categoryId)}
+                          </div>
                           {product.featured && (
                             <div className="flex items-center gap-1 text-xs text-yellow-600 mt-1">
                               <Star className="w-3 h-3" />
@@ -257,13 +331,12 @@ export default function ProductList() {
                     </td>
                     <td className="py-4 px-4">
                       <span
-                        className={`px-2 py-1 rounded text-xs font-semibold ${
-                          product.stock > 10
-                            ? 'bg-green-100 text-green-800'
-                            : product.stock > 0
+                        className={`px-2 py-1 rounded text-xs font-semibold ${product.stock > 10
+                          ? 'bg-green-100 text-green-800'
+                          : product.stock > 0
                             ? 'bg-yellow-100 text-yellow-800'
                             : 'bg-red-100 text-red-800'
-                        }`}
+                          }`}
                       >
                         {product.stock} adet
                       </span>
@@ -272,11 +345,10 @@ export default function ProductList() {
                       <div className="flex flex-col gap-2">
                         <button
                           onClick={() => handleToggleActive(product)}
-                          className={`flex items-center gap-1 text-xs px-2 py-1 rounded ${
-                            product.isActive
-                              ? 'bg-green-100 text-green-700'
-                              : 'bg-gray-100 text-gray-700'
-                          }`}
+                          className={`flex items-center gap-1 text-xs px-2 py-1 rounded ${product.isActive
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-gray-100 text-gray-700'
+                            }`}
                         >
                           {product.isActive ? (
                             <>
@@ -309,11 +381,10 @@ export default function ProductList() {
                         </button>
                         <button
                           onClick={() => handleToggleFeatured(product)}
-                          className={`p-2 rounded-lg transition-colors ${
-                            product.featured
-                              ? 'text-yellow-600 hover:bg-yellow-50'
-                              : 'text-gray-400 hover:bg-gray-100'
-                          }`}
+                          className={`p-2 rounded-lg transition-colors ${product.featured
+                            ? 'text-yellow-600 hover:bg-yellow-50'
+                            : 'text-gray-400 hover:bg-gray-100'
+                            }`}
                           title="Öne Çıkan"
                         >
                           <Star className="w-4 h-4" />

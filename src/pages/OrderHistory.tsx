@@ -1,46 +1,44 @@
 import { useState, useEffect } from "react";
 import { ArrowLeft, ShoppingBag, Package, CheckCircle, Clock, XCircle, AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useOrderStore } from "@/store/orderStore";
+import { useAuthStore } from "@/store/authStore";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
-interface OrderItem {
-  id: number;
-  name: string;
-  price: number;
-  quantity: number;
-  image: string;
-}
-
-interface Order {
-  id: number;
-  orderNumber: string;
-  date: string;
-  status: 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
-  totalAmount: number;
-  items: OrderItem[];
+interface LocalOrder {
+  id: string | number
+  orderNumber: string
+  date: string
+  status: 'pending' | 'preparing' | 'shipped' | 'delivered' | 'cancelled' | 'processing' | 'returned'
+  totalAmount: number
+  items: any[]
   shippingAddress: {
-    name: string;
-    phone: string;
-    address: string;
-    district: string;
-    city: string;
-  };
+    name: string
+    phone: string
+    address: string
+    district: string
+    city: string
+  }
+  estimatedDelivery?: string
+  userId?: number
+  trackingNumber?: string
+  carrier?: string
 }
 
-const statusConfig = {
+const statusConfig: Record<LocalOrder['status'], { label: string; color: string; icon: any }> = {
   pending: {
     label: 'Beklemede',
     color: 'bg-yellow-100 text-yellow-700',
     icon: Clock,
   },
-  confirmed: {
-    label: 'Onaylandı',
+  preparing: {
+    label: 'Hazırlanıyor',
     color: 'bg-blue-100 text-blue-700',
     icon: CheckCircle,
   },
   shipped: {
-    label: 'Kargolandı',
+    label: 'Yola Çıktı',
     color: 'bg-purple-100 text-purple-700',
     icon: Package,
   },
@@ -54,38 +52,37 @@ const statusConfig = {
     color: 'bg-red-100 text-red-700',
     icon: XCircle,
   },
+  processing: {
+    label: 'İşleniyor',
+    color: 'bg-indigo-100 text-indigo-700',
+    icon: Package,
+  },
+  returned: {
+    label: 'İade Edildi',
+    color: 'bg-orange-100 text-orange-700',
+    icon: XCircle,
+  },
 };
 
 export default function OrderHistory() {
   const navigate = useNavigate();
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const { orders, isLoading, error, fetchOrders } = useOrderStore();
+  const { isAuthenticated } = useAuthStore();
+  const [selectedOrder, setSelectedOrder] = useState<LocalOrder | null>(null);
 
   useEffect(() => {
-    fetchOrders();
-  }, []);
-
-  const fetchOrders = async () => {
-    try {
-      const response = await fetch('http://localhost:3001/api/user/orders');
-      
-      if (!response.ok) {
-        throw new Error('Siparişler yüklenemedi');
-      }
-
-      const data = await response.json();
-      setOrders(data);
-      setIsLoading(false);
-    } catch (error) {
-      console.error('Fetch orders error:', error);
-      setError('Siparişler yüklenemedi. Lütfen tekrar deneyin.');
-      setIsLoading(false);
+    if (!isAuthenticated) {
+      navigate('/login');
     }
-  };
+  }, [isAuthenticated, navigate]);
 
-  const getStatusInfo = (status: Order['status']) => {
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchOrders();
+    }
+  }, [isAuthenticated, fetchOrders]);
+
+  const getStatusInfo = (status: LocalOrder['status']) => {
     return statusConfig[status];
   };
 
@@ -97,7 +94,7 @@ export default function OrderHistory() {
     });
   };
 
-  const handleViewOrder = (order: Order) => {
+  const handleViewOrder = (order: LocalOrder) => {
     setSelectedOrder(order);
   };
 
@@ -105,11 +102,13 @@ export default function OrderHistory() {
     setSelectedOrder(null);
   };
 
+  if (!isAuthenticated) return null;
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Siparişler yükleniyor...</p>
         </div>
       </div>
@@ -124,8 +123,8 @@ export default function OrderHistory() {
           <h1 className="text-2xl font-bold text-gray-800 mb-2">Hata Oluştu</h1>
           <p className="text-gray-600 mb-6">{error}</p>
           <button
-            onClick={fetchOrders}
-            className="bg-pink-500 text-white px-8 py-3 rounded-lg hover:bg-pink-600 transition-colors"
+            onClick={() => fetchOrders()}
+            className="bg-primary-600 text-white px-8 py-3 rounded-lg hover:bg-primary-700 transition-colors"
           >
             Tekrar Dene
           </button>
@@ -143,7 +142,7 @@ export default function OrderHistory() {
           <p className="text-gray-600 mb-6">İlk siparişinizi vermek için alışverişe başlayın</p>
           <button
             onClick={() => navigate('/catalog')}
-            className="bg-pink-500 text-white px-8 py-3 rounded-lg hover:bg-pink-600 transition-colors"
+            className="bg-primary-600 text-white px-8 py-3 rounded-lg hover:bg-primary-700 transition-colors"
           >
             Alışverişe Başla
           </button>
@@ -157,7 +156,7 @@ export default function OrderHistory() {
       <Header />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <a href="/profile" className="inline-flex items-center text-gray-600 hover:text-pink-500 mb-8">
+        <a href="/profile" className="inline-flex items-center text-gray-600 hover:text-primary-600 mb-8 transition-colors">
           <ArrowLeft className="w-5 h-5 mr-2" />
           Profili Dön
         </a>
@@ -172,7 +171,7 @@ export default function OrderHistory() {
             return (
               <div
                 key={order.id}
-                className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer"
+                className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow cursor-pointer border border-gray-100"
                 onClick={() => handleViewOrder(order)}
               >
                 <div className="flex items-center justify-between mb-4">
@@ -208,10 +207,10 @@ export default function OrderHistory() {
                   )}
                 </div>
 
-                <div className="pt-4 border-t">
+                <div className="pt-4 border-t border-gray-100">
                   <div className="flex items-center justify-between">
                     <span className="text-gray-600">Toplam</span>
-                    <span className="text-lg font-bold text-pink-500">{order.totalAmount} ₺</span>
+                    <span className="text-lg font-bold text-primary-600">{order.totalAmount} ₺</span>
                   </div>
                 </div>
               </div>
@@ -221,9 +220,9 @@ export default function OrderHistory() {
       </main>
 
       {selectedOrder && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b flex items-center justify-between">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-gray-100">
+            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
               <h2 className="text-xl font-semibold text-gray-800">
                 Sipariş Detayları
               </h2>
@@ -243,9 +242,8 @@ export default function OrderHistory() {
                   <h3 className="font-semibold text-gray-800">{selectedOrder.orderNumber}</h3>
                   <p className="text-sm text-gray-500">{formatDate(selectedOrder.date)}</p>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                  getStatusInfo(selectedOrder.status).color
-                }`}>
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusInfo(selectedOrder.status).color
+                  }`}>
                   {getStatusInfo(selectedOrder.status).label}
                 </span>
               </div>
@@ -272,16 +270,16 @@ export default function OrderHistory() {
                         <p className="font-medium text-gray-800">{item.name}</p>
                         <p className="text-sm text-gray-500">Adet: {item.quantity}</p>
                       </div>
-                      <p className="text-lg font-bold text-pink-500">{item.price * item.quantity} ₺</p>
+                      <p className="text-lg font-bold text-primary-600">{item.price * item.quantity} ₺</p>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div className="pt-4 border-t">
+              <div className="pt-4 border-t border-gray-100">
                 <div className="flex items-center justify-between">
                   <span className="text-gray-600">Toplam</span>
-                  <span className="text-2xl font-bold text-pink-500">{selectedOrder.totalAmount} ₺</span>
+                  <span className="text-2xl font-bold text-primary-600">{selectedOrder.totalAmount} ₺</span>
                 </div>
               </div>
             </div>

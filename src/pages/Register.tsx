@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Mail, Lock, User, Phone, ArrowRight, AlertCircle, CheckCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/store/authStore";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -37,7 +39,7 @@ export default function Register() {
       formData.phone,
       formData.password
     );
-    
+
     if (success) {
       setSuccess('Kayıt başarılı! Giriş yapılıyor...');
       setTimeout(() => {
@@ -58,23 +60,10 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f6f3ec]">
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <a href="/" className="text-2xl font-bold text-primary-600">Lilyum Flora</a>
-            </div>
-            <nav className="hidden md:flex space-x-8">
-              <a href="/" className="text-gray-700 hover:text-primary-600 transition-colors">Ana Sayfa</a>
-              <a href="/catalog" className="text-gray-700 hover:text-primary-600 transition-colors">Katalog</a>
-              <a href="/contact" className="text-gray-700 hover:text-primary-600 transition-colors">İletişim</a>
-            </nav>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-[#f6f3ec] flex flex-col">
+      <Header />
 
-      <main className="max-w-md mx-auto px-4 py-16">
+      <main className="flex-grow max-w-md mx-auto px-4 py-16 w-full">
         <div className="bg-white rounded-lg shadow-lg p-8">
           <h1 className="text-3xl font-bold text-center text-gray-800 mb-2">
             Hesap Oluştur
@@ -183,12 +172,12 @@ export default function Register() {
 
             <div>
               <label className="flex items-start space-x-2 cursor-pointer">
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   name="kvkk"
                   checked={formData.kvkk}
                   onChange={handleChange}
-                  className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500 mt-1" 
+                  className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500 mt-1"
                 />
                 <span className="text-sm text-gray-600">
                   KVKK metnini okudum, anladım ve kabul ediyorum. Kişisel verilerimin işlenmesine onay veriyorum.
@@ -198,12 +187,12 @@ export default function Register() {
 
             <div>
               <label className="flex items-center space-x-2 cursor-pointer">
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   name="newsletter"
                   checked={formData.newsletter}
                   onChange={handleChange}
-                  className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500" 
+                  className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
                 />
                 <span className="text-sm text-gray-600">
                   Kampanya ve yeni ürünlerden haberdar olmak için e-posta bültenine abone olmak istiyorum.
@@ -232,11 +221,7 @@ export default function Register() {
         </div>
       </main>
 
-      <footer className="bg-gray-800 text-white py-8 px-4">
-        <div className="max-w-7xl mx-auto text-center text-gray-400">
-          <p>&copy; 2024 Lilyum Flora. Tüm hakları saklıdır.</p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

@@ -1,5 +1,4 @@
 import { createContext, useContext, useEffect, ReactNode } from 'react'
-import { useAdminStore } from '@/store/adminStore'
 import type { SEOSettings } from '@/types'
 
 interface SEOContextType {
@@ -10,20 +9,21 @@ const SEOContext = createContext<SEOContextType | undefined>(undefined)
 
 interface SEOProviderProps {
   children: ReactNode
+  seoSettings?: SEOSettings | null
 }
 
-export function SEOProvider({ children }: SEOProviderProps) {
-  const seoSettings = useAdminStore((state) => state.seoSettings)
+export function SEOProvider({ children, seoSettings: propSeoSettings }: SEOProviderProps) {
+  const settings = propSeoSettings
 
   useEffect(() => {
-    if (seoSettings) {
-      updateMetaTags(seoSettings)
-      injectTrackingScripts(seoSettings)
+    if (settings) {
+      updateMetaTags(settings)
+      injectTrackingScripts(settings)
     }
-  }, [seoSettings])
+  }, [settings])
 
   return (
-    <SEOContext.Provider value={{ seoSettings }}>
+    <SEOContext.Provider value={{ seoSettings: settings }}>
       {children}
     </SEOContext.Provider>
   )

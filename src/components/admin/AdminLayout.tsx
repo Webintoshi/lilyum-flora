@@ -28,7 +28,6 @@ import CategoryManagement from '@/pages/admin/categories/CategoryManagement'
 import SEOSettings from '@/pages/admin/SEOSettings'
 import Settings from '@/pages/admin/Settings'
 import BannerManagement from '@/pages/admin/banners/BannerManagement'
-import ScraperTool from '@/pages/admin/scrapers/ScraperTool'
 
 interface NavItem {
   title: string
@@ -40,8 +39,7 @@ export default function AdminLayout({ children }: { children?: React.ReactNode }
   const { isAuthenticated, logout } = useAdminStore()
   const location = useLocation()
   const navigate = useNavigate()
-  const [sidebarOpen, setSidebarOpen] = useState(true)
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 1024)
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -50,13 +48,12 @@ export default function AdminLayout({ children }: { children?: React.ReactNode }
   }, [isAuthenticated, navigate])
 
   const navItems: NavItem[] = [
-    { title: 'Dashboard', path: '/admin', icon: <LayoutDashboard className="w-5 h-5" /> },
+    { title: 'Ana Sayfa', path: '/admin', icon: <LayoutDashboard className="w-5 h-5" /> },
     { title: 'Ürünler', path: '/admin/products', icon: <ShoppingBag className="w-5 h-5" /> },
     { title: 'Siparişler', path: '/admin/orders', icon: <Package className="w-5 h-5" /> },
     { title: 'Müşteriler', path: '/admin/customers', icon: <Users className="w-5 h-5" /> },
     { title: 'Kategoriler', path: '/admin/categories', icon: <Tag className="w-5 h-5" /> },
     { title: 'Bannerlar', path: '/admin/banners', icon: <ImageIcon className="w-5 h-5" /> },
-    { title: 'Scraper', path: '/admin/scrapers', icon: <Globe className="w-5 h-5" /> },
     { title: 'Ayarlar', path: '/admin/settings', icon: <SettingsIcon className="w-5 h-5" /> },
   ]
 
@@ -78,18 +75,12 @@ export default function AdminLayout({ children }: { children?: React.ReactNode }
 
   return (
     <div className="min-h-screen bg-[#f6f3ec]">
-      <button
-        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-        className="lg:hidden fixed top-4 right-4 z-50 p-2 bg-primary-600 text-white rounded-lg shadow-lg"
-      >
-        {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-      </button>
+
 
       <div className="flex min-h-screen">
         <aside
-          className={`fixed inset-y-0 left-0 z-40 w-64 bg-[#212122] text-white transform transition-transform duration-300 ease-in-out lg:relative lg:transform-none ${
-            mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-          } ${!sidebarOpen && 'lg:-translate-x-full'}`}
+          className={`fixed inset-y-0 left-0 z-40 w-64 bg-[#212122] text-white transform transition-transform duration-300 ease-in-out lg:relative lg:transform-none ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+            } ${!sidebarOpen && 'lg:-translate-x-full'}`} // Desktop: if !sidebarOpen -> hide
         >
           <div className="flex flex-col h-full">
             <div className="flex items-center justify-between p-6 border-b border-gray-700">
@@ -117,9 +108,8 @@ export default function AdminLayout({ children }: { children?: React.ReactNode }
                         <div>
                           <div
                             onClick={() => navigate(item.path)}
-                            className={`flex items-center gap-3 px-3 py-3 rounded-lg cursor-pointer transition-colors ${
-                              isActive(item.path) ? 'bg-primary-600' : 'hover:bg-gray-700'
-                            }`}
+                            className={`flex items-center gap-3 px-3 py-3 rounded-lg cursor-pointer transition-colors ${isActive(item.path) ? 'bg-primary-600' : 'hover:bg-gray-700'
+                              }`}
                           >
                             {item.icon}
                             <span className="font-medium">{item.title}</span>
@@ -130,10 +120,9 @@ export default function AdminLayout({ children }: { children?: React.ReactNode }
                                 <li key={subItem.path}>
                                   <Link
                                     to={subItem.path}
-                                    className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                                      isActive(subItem.path) ? 'bg-primary-700' : 'hover:bg-gray-700'
-                                    }`}
-                                    onClick={() => setMobileMenuOpen(false)}
+                                    className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${isActive(subItem.path) ? 'bg-primary-700' : 'hover:bg-gray-700'
+                                      }`}
+                                    onClick={() => window.innerWidth < 1024 && setSidebarOpen(false)}
                                   >
                                     {subItem.icon}
                                     <span className="text-sm">{subItem.title}</span>
@@ -146,10 +135,9 @@ export default function AdminLayout({ children }: { children?: React.ReactNode }
                       ) : (
                         <Link
                           to={item.path}
-                          className={`flex items-center gap-3 px-3 py-3 rounded-lg transition-colors ${
-                            isActive(item.path) ? 'bg-primary-600' : 'hover:bg-gray-700'
-                          }`}
-                          onClick={() => setMobileMenuOpen(false)}
+                          className={`flex items-center gap-3 px-3 py-3 rounded-lg transition-colors ${isActive(item.path) ? 'bg-primary-600' : 'hover:bg-gray-700'
+                            }`}
+                          onClick={() => window.innerWidth < 1024 && setSidebarOpen(false)}
                         >
                           {item.icon}
                           <span className="font-medium">{item.title}</span>
@@ -175,21 +163,30 @@ export default function AdminLayout({ children }: { children?: React.ReactNode }
 
         <main className="flex-1 flex flex-col min-w-0">
           <header className="bg-white shadow-sm sticky top-0 z-30">
-            <div className="flex items-center justify-between px-6 py-4">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">
-                  {navItems.find((item) => isActive(item.path))?.title || 'Admin Panel'}
-                </h1>
-                <p className="text-sm text-gray-500">Hoş geldiniz, Yönetici</p>
-              </div>
+            <div className="flex items-center justify-between px-4 sm:px-6 py-4">
               <div className="flex items-center gap-4">
+                <button
+                  onClick={() => setSidebarOpen(!sidebarOpen)}
+                  className="lg:hidden p-2 -ml-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600"
+                >
+                  <Menu className="w-6 h-6" />
+                </button>
+                <div>
+                  <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate max-w-[200px] sm:max-w-none">
+                    {navItems.find((item) => isActive(item.path))?.title || 'Admin Panel'}
+                  </h1>
+                  <p className="text-sm text-gray-500 hidden sm:block">Hoş geldiniz, Yönetici</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 sm:gap-4">
                 <Link
                   to="/"
                   target="_blank"
-                  className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium"
+                  className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-xs sm:text-sm font-medium whitespace-nowrap"
                 >
                   <Home className="w-4 h-4" />
-                  Siteyi Görüntüle
+                  <span className="hidden sm:inline">Siteyi Görüntüle</span>
+                  <span className="sm:hidden">Site</span>
                 </Link>
               </div>
             </div>
@@ -210,19 +207,19 @@ export default function AdminLayout({ children }: { children?: React.ReactNode }
               <Route path="seo" element={<SEOSettings />} />
               <Route path="settings" element={<Settings />} />
               <Route path="banners" element={<BannerManagement />} />
-              <Route path="scrapers" element={<ScraperTool />} />
             </Routes>
             {children}
           </div>
         </main>
-      </div>
+      </div >
 
-      {mobileMenuOpen && (
+      {sidebarOpen && (
         <div
-          onClick={() => setMobileMenuOpen(false)}
+          onClick={() => setSidebarOpen(false)}
           className="fixed inset-0 bg-black/50 z-30 lg:hidden"
         />
-      )}
-    </div>
+      )
+      }
+    </div >
   )
 }

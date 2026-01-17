@@ -1,5 +1,5 @@
 export interface Product {
-  id: number
+  id: string | number
   name: string
   description: string
   price: number
@@ -16,14 +16,19 @@ export interface Product {
   featured: boolean
   sizes?: string[]
   colors?: string[]
-  categoryId?: number
+  categoryId?: string | number
+  // SEO Fields
+  metaTitle?: string
+  metaDescription?: string
+  keywords?: string
+
   createdAt: string
   updatedAt: string
 }
 
 export interface OrderItem {
-  id?: number
-  productId: number
+  id?: string | number
+  productId: string | number
   productName: string
   productImage: string
   image?: string
@@ -46,9 +51,9 @@ export interface Address {
 }
 
 export interface Order {
-  id: number
+  id: string | number
   customer: {
-    id: number
+    id: string | number
     name: string
     email: string
     phone: string
@@ -63,12 +68,20 @@ export interface Order {
   trackingNumber?: string
   notes?: string
   paymentMethod?: string
+  deliveryPhotoUrl?: string
+  deliveryPhotoApproved?: boolean
+  sender?: {
+    name: string
+    phone: string
+  }
+  cardNote?: string
+  isAnonymous?: boolean
   createdAt: string
   updatedAt: string
 }
 
 export interface Customer {
-  id: number
+  id: string | number
   name: string
   email: string
   phone: string
@@ -83,7 +96,7 @@ export interface Customer {
 }
 
 export interface Category {
-  id: number
+  id: string | number
   name: string
   slug: string
   description?: string
@@ -91,38 +104,54 @@ export interface Category {
   icon?: string
   productCount: number
   isActive: boolean
+  // SEO Fields
+  metaTitle?: string
+  metaDescription?: string
+  keywords?: string
+
   createdAt: string
   updatedAt: string
 }
 
+export interface PageSEO {
+  id: string
+  page: string // 'home', 'about', 'contact', 'login', 'register', etc.
+  title: string
+  description: string
+  keywords?: string
+  image?: string
+}
+
 export interface SEOSettings {
-  id: number
+  id: string | number
   siteTitle: string
   siteDescription: string
   keywords: string
+  logo?: string
   faviconUrl?: string
-  
+
   ogTitle?: string
   ogDescription?: string
   ogImage?: string
-  
+
   twitterCardType?: 'summary' | 'summary_large_image'
   twitterTitle?: string
   twitterDescription?: string
   twitterImage?: string
-  
+  twitterHandle?: string
+
   gtmId?: string
   gaId?: string
   metaPixelId?: string
   hotjarId?: string
   yandexMetricaId?: string
-  
+
   customHeadScripts?: string
   customBodyScripts?: string
-  
+
   robotsTxt?: string
   canonicalUrlPattern?: string
-  
+
   updatedAt: string
 }
 
@@ -142,14 +171,14 @@ export interface SalesData {
 }
 
 export interface AdminUser {
-  id: number
+  id: string | number
   email: string
   role: 'admin' | 'editor'
   createdAt: string
 }
 
 export interface SizeBanner {
-  id: number
+  id: string | number
   title: string
   subtitle?: string
   image: string
@@ -164,7 +193,7 @@ export interface SizeBanner {
 }
 
 export interface HeroBanner {
-  id: number
+  id: string | number
   title: string
   subtitle?: string
   description?: string
@@ -212,7 +241,7 @@ export interface AnalyzeResult {
 
 export interface ScrapingOptions {
   url: string
-  targetCategoryId: number
+  targetCategoryId: string | number
   priceMultiplier?: number
   currencyMultiplier?: number
 }

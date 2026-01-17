@@ -6,12 +6,14 @@ import Footer from "@/components/Footer";
 import ProductFilter from "@/components/ProductFilter";
 import { useCartStore } from "@/store/cartStore";
 import { useWishlistStore } from "@/store/wishlistStore";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import type { Product } from "@/types";
-import { supabase } from "@/lib/supabase";
+import { db } from "@/lib/firebase";
+import { collection, query, where, getDocs, orderBy, limit } from "firebase/firestore";
 
 export default function Catalog() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { addToCart, getTotalItems } = useCartStore();
   const { addToWishlist, items: wishlistItems } = useWishlistStore();
   const [searchQuery, setSearchQuery] = useState("");
@@ -32,14 +34,32 @@ export default function Catalog() {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const { data, error } = await supabase
-          .from('products')
-          .select('*, categories(name, slug)')
-          .eq('is_active', true)
-          .order('created_at', { ascending: false });
-        
-        if (error) throw error;
-        setProducts(data || []);
+        const q = query(
+          collection(db, 'products'),
+          where('isActive', '==', true)
+        );
+
+        const querySnapshot = await getDocs(q);
+        const productsData: Product[] = [];
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          productsData.push({
+            id: doc.id,
+            ...data,
+            // Map Firestore snake_case to app camelCase
+            categoryId: data.category_id || data.categoryId,
+            category: data.category || '', // ensuring category name exists or empty
+          } as unknown as Product);
+        });
+
+        // Client-side sort to avoid missing index issues
+        productsData.sort((a, b) => {
+          const dateA = new Date(a.createdAt || 0).getTime();
+          const dateB = new Date(b.createdAt || 0).getTime();
+          return dateB - dateA;
+        });
+
+        setProducts(productsData);
       } catch (error) {
         console.error('Products fetch error:', error);
       } finally {
@@ -49,14 +69,19 @@ export default function Catalog() {
 
     const fetchCategories = async () => {
       try {
-        const { data, error } = await supabase
-          .from('categories')
-          .select('*')
-          .eq('is_active', true)
-          .order('name', { ascending: true });
-        
-        if (error) throw error;
-        setCategories(data || []);
+        const q = query(
+          collection(db, 'categories'),
+          where('isActive', '==', true),
+          orderBy('name', 'asc')
+        );
+
+        const querySnapshot = await getDocs(q);
+        const categoriesData: any[] = [];
+        querySnapshot.forEach((doc) => {
+          categoriesData.push({ id: doc.id, ...doc.data() });
+        });
+
+        setCategories(categoriesData);
       } catch (error) {
         console.error('Categories fetch error:', error);
       }
@@ -65,6 +90,75 @@ export default function Catalog() {
     fetchProducts();
     fetchCategories();
   }, []);
+
+  useEffect(() => {
+    const categoryParam = searchParams.get('category');
+    if (categoryParam) {
+      setActiveFilters(prev => ({ ...prev, categories: [categoryParam] }));
+    }
+  }, [searchParams]);
+
+  const filteredProducts = products.filter((product) => {
+    const matchesSearch =
+      product.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesPrice = product.price >= priceRange.min && product.price <= priceRange.max;
+
+    // Improved Category Filtering
+    // activeFilters.categories contains SLUGS (e.g., 'buketler', 'orkideler')
+
+    // Check if 'all' is selected or no category is selected
+    const isAllSelected = activeFilters.categories.includes('all') || activeFilters.categories.length === 0;
+
+    let matchesCategory = isAllSelected;
+
+    if (!matchesCategory) {
+      const safeLowerCaseTr = (str: string) => (str || '').toLocaleLowerCase('tr');
+
+      // 1. Find matched Category Objects from active filters (slugs/names)
+      const matchingCategories = categories.filter(c =>
+        activeFilters.categories.some(filter => {
+          const filterLower = safeLowerCaseTr(filter);
+          return (
+            filterLower === safeLowerCaseTr(c.slug) ||
+            filterLower === safeLowerCaseTr(c.name) ||
+            filterLower === safeLowerCaseTr(String(c.id))
+          );
+        })
+      );
+
+      const selectedCatIds = matchingCategories.map(c => String(c.id));
+
+      // 2. Main Check: Does Product.categoryId match any Selected Category ID?
+      const prodCatId = String(product.categoryId || '');
+
+      if (prodCatId && selectedCatIds.includes(prodCatId)) {
+        matchesCategory = true;
+      }
+
+      // 3. Fallback Check: Does Product.category Name match any Active Filter?
+      // (Handles cases where categoryId is missing or mismatching, but Name is correct)
+      else if (activeFilters.categories.some(filter => {
+        const filterLower = safeLowerCaseTr(filter);
+        const prodCatNameLower = safeLowerCaseTr(product.category || '');
+
+        // Direct Name Match
+        if (prodCatNameLower === filterLower || prodCatNameLower.includes(filterLower)) {
+          return true;
+        }
+
+        // Indirect Name Match via Category Object
+        const matchedCat = categories.find(c => safeLowerCaseTr(c.slug) === filterLower || safeLowerCaseTr(c.name) === filterLower);
+        if (matchedCat && prodCatNameLower === safeLowerCaseTr(matchedCat.name)) {
+          return true;
+        }
+        return false;
+      })) {
+        matchesCategory = true;
+      }
+    }
+
+    return matchesSearch && matchesPrice && matchesCategory;
+  });
 
   const filterCategories = [
     {
@@ -129,18 +223,6 @@ export default function Catalog() {
     setPriceRange({ min: 0, max: 2000 });
   };
 
-  const filteredProducts = products.filter((product) => {
-    const matchesSearch =
-      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (product.categories && product.categories.name.toLowerCase().includes(searchQuery.toLowerCase()));
-    const matchesPrice = product.price >= priceRange.min && product.price <= priceRange.max;
-    const matchesCategory =
-      activeFilters.categories.length === 0 ||
-      (product.categories && activeFilters.categories.some((cat) => product.categories.slug === cat));
-    
-    return matchesSearch && matchesPrice && matchesCategory;
-  });
-
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedProducts = filteredProducts.slice(startIndex, startIndex + itemsPerPage);
@@ -163,7 +245,7 @@ export default function Catalog() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <div className="mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold text-dark-800 mb-4 sm:mb-6">Ürün Kataloğu</h1>
-          
+
           <div className="flex flex-col lg:flex-row gap-3 sm:gap-4 mb-4 sm:mb-6">
             <div className="flex-1 relative">
               <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-dark-400 w-4 h-4 sm:w-5 sm:h-5" />
@@ -178,7 +260,7 @@ export default function Catalog() {
                 className="w-full pl-10 sm:pl-12 pr-3 sm:pr-4 py-3 sm:py-4 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-base sm:text-lg"
               />
             </div>
-            
+
             <div className="flex items-center gap-2 sm:gap-3">
               <button
                 onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")}
@@ -191,7 +273,7 @@ export default function Catalog() {
                 )}
                 <span className="hidden sm:inline text-sm">Görünüm</span>
               </button>
-              
+
               <button
                 onClick={(e) => {
                   const rect = e.currentTarget.getBoundingClientRect();
@@ -213,7 +295,7 @@ export default function Catalog() {
                   </span>
                 )}
               </button>
-              
+
               <select
                 value={sortBy}
                 onChange={(e) => {
@@ -341,8 +423,8 @@ export default function Catalog() {
             ) : viewMode === "grid" ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
                 {paginatedProducts.map((product) => (
-                  <ProductCard 
-                    key={product.id} 
+                  <ProductCard
+                    key={product.id}
                     id={product.id}
                     name={product.name}
                     price={product.price}
@@ -350,7 +432,7 @@ export default function Catalog() {
                     image={product.image}
                     rating={product.rating || 0}
                     reviews={product.reviews || 0}
-                    category={product.categories?.name || ''}
+                    category={product.category || ''}
                     inStock={product.stock || 0}
                     onAddToCart={(e) => handleAddToCartWithOpen(product, e)}
                     onAddToWishlist={() => handleAddToWishlist({ id: product.id, name: product.name, price: product.price, image: product.image })}
@@ -375,9 +457,8 @@ export default function Catalog() {
                           {[1, 2, 3, 4, 5].map((star) => (
                             <span
                               key={star}
-                              className={`text-xs sm:text-sm lg:text-base ${
-                                star <= (product.rating || 0) ? "text-yellow-400" : "text-dark-300"
-                              }`}
+                              className={`text-xs sm:text-sm lg:text-base ${star <= (product.rating || 0) ? "text-yellow-400" : "text-dark-300"
+                                }`}
                             >
                               ★
                             </span>
@@ -425,11 +506,10 @@ export default function Catalog() {
                     <button
                       key={page}
                       onClick={() => handlePageChange(page)}
-                      className={`w-9 h-9 sm:w-10 sm:h-10 rounded-lg transition-colors text-sm sm:text-base ${
-                        page === currentPage
-                          ? "bg-primary-600 text-white"
-                          : "bg-neutral-200 text-dark-700 hover:bg-neutral-300"
-                      }`}
+                      className={`w-9 h-9 sm:w-10 sm:h-10 rounded-lg transition-colors text-sm sm:text-base ${page === currentPage
+                        ? "bg-primary-600 text-white"
+                        : "bg-neutral-200 text-dark-700 hover:bg-neutral-300"
+                        }`}
                     >
                       {page}
                     </button>

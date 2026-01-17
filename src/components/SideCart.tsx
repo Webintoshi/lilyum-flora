@@ -7,12 +7,12 @@ export default function SideCart() {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50">
-      <div 
-        className="absolute inset-0 bg-dark-900/50 transition-opacity duration-200" 
+    <div className="fixed inset-0 z-[60]">
+      <div
+        className="absolute inset-0 bg-dark-900/50 transition-opacity duration-200"
         onClick={toggleCart}
       ></div>
-      
+
       <div className="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl flex flex-col animate-slideIn">
         <div className="flex items-center justify-between p-6 border-b border-neutral-200">
           <div className="flex items-center gap-3">
@@ -22,7 +22,7 @@ export default function SideCart() {
               {items.length}
             </span>
           </div>
-          <button 
+          <button
             onClick={toggleCart}
             className="p-2 hover:bg-neutral-100 rounded-lg transition-colors"
           >
@@ -41,14 +41,20 @@ export default function SideCart() {
             <div className="space-y-4">
               {items.map((item) => (
                 <div key={item.id} className="flex gap-4 p-4 bg-neutral-50 rounded-lg hover:bg-neutral-100 transition-colors">
-                  <div className="w-20 h-20 bg-gradient-to-br from-primary-50 to-primary-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <span className="text-4xl">{item.image}</span>
+                  <div className="w-20 h-20 bg-gray-50 rounded-lg overflow-hidden flex-shrink-0 border border-gray-100">
+                    {item.image.startsWith('http') || item.image.startsWith('/') || item.image.startsWith('data:') ? (
+                      <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-primary-50 text-3xl">
+                        {item.image}
+                      </div>
+                    )}
                   </div>
-                  
+
                   <div className="flex-1">
                     <h4 className="font-semibold text-dark-800 mb-1 line-clamp-1">{item.name}</h4>
                     <p className="text-primary-600 font-bold text-lg mb-2">{item.price} ₺</p>
-                    
+
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
@@ -65,7 +71,7 @@ export default function SideCart() {
                       </button>
                     </div>
                   </div>
-                  
+
                   <button
                     onClick={() => removeFromCart(item.id)}
                     className="p-2 hover:bg-red-100 rounded-lg transition-colors self-start"
@@ -84,14 +90,14 @@ export default function SideCart() {
             <span className="font-semibold text-dark-800">{getTotalPrice()} ₺</span>
           </div>
           <div className="flex justify-between items-center text-lg">
-            <span className="text-dark-600">Kargo</span>
+            <span className="text-dark-600">Teslimat</span>
             <span className="font-semibold text-primary-600">Ücretsiz</span>
           </div>
           <div className="flex justify-between items-center text-xl pt-4 border-t border-neutral-200">
             <span className="font-bold text-dark-800">Toplam</span>
             <span className="font-bold text-primary-600">{getTotalPrice()} ₺</span>
           </div>
-          
+
           {items.length > 0 && (
             <a
               href="/checkout"

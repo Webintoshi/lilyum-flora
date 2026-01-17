@@ -2,8 +2,13 @@ import { useState } from "react";
 import { Mail, Phone, MapPin, Send, MessageCircle, AlertCircle, CheckCircle } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import SEO from "@/components/SEO";
+import { useAdminStore } from "@/store/adminStore";
 
 export default function Contact() {
+  const { pageSEO } = useAdminStore();
+  const contactSEO = pageSEO?.find(p => p.page === 'contact');
+
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -48,6 +53,13 @@ export default function Contact() {
   };
   return (
     <div className="min-h-screen bg-neutral-50">
+      <SEO
+        title={contactSEO?.title || "İletişim"}
+        description={contactSEO?.description}
+        keywords={contactSEO?.keywords}
+        image={contactSEO?.image}
+        canonical="/contact"
+      />
       <Header />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -170,7 +182,7 @@ export default function Contact() {
                 className="flex items-center justify-center bg-[#25D366] text-white px-6 py-3 rounded-lg hover:bg-[#128C7E] transition-colors font-semibold"
               >
                 <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-5.46-4.45-9.91-9.91-9.91zM6.98 15.23c-.09-.16-.47-.86-.68-1.04-.23-.19-.55-.12-.74-.06-.29.12-1.36.81-1.55.95-.25.19-.44.08-.69-.17-.39-.24-1.28-.84-1.32-.88-.04-.04-.09-.07-.15-.07-.31 0-.61.32-.61.32-.37 0-.68-.02-.87-.08-.19-.06-.37-.16-.53-.28-.28-.77-.52-1.07-.84-.3-.32-.6-.75-1.18-1.39-.57-.62-.94-1.44-1.44-2.37-.5-.93-.86-1.78-1.07-2.57-.21-.79-.31-1.52-.31-2.19 0-1.76.46-3.45 1.31-4.94.85-1.49 2.08-2.31 3.44-2.31 1.35 0 2.59.82 3.44 2.31.85 1.49 1.31 3.18 1.31 4.94 0 .67-.1 1.4-.31 2.19-.21.79-.57 1.64-1.07 2.57-.5.93-.93 1.75-1.44 2.37-.62.57-1.44 1.07-2.37 1.39-.57.31-1.81.46-2.57.46z"/>
+                  <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-5.46-4.45-9.91-9.91-9.91zM6.98 15.23c-.09-.16-.47-.86-.68-1.04-.23-.19-.55-.12-.74-.06-.29.12-1.36.81-1.55.95-.25.19-.44.08-.69-.17-.39-.24-1.28-.84-1.32-.88-.04-.04-.09-.07-.15-.07-.31 0-.61.32-.61.32-.37 0-.68-.02-.87-.08-.19-.06-.37-.16-.53-.28-.28-.77-.52-1.07-.84-.3-.32-.6-.75-1.18-1.39-.57-.62-.94-1.44-1.44-2.37-.5-.93-.86-1.78-1.07-2.57-.21-.79-.31-1.52-.31-2.19 0-1.76.46-3.45 1.31-4.94.85-1.49 2.08-2.31 3.44-2.31 1.35 0 2.59.82 3.44 2.31.85 1.49 1.31 3.18 1.31 4.94 0 .67-.1 1.4-.31 2.19-.21.79-.57 1.64-1.07 2.57-.5.93-.93 1.75-1.44 2.37-.62.57-1.44 1.07-2.37 1.39-.57.31-1.81.46-2.57.46z" />
                 </svg>
                 WhatsApp ile İletişime Geç
               </a>
@@ -231,7 +243,7 @@ export default function Contact() {
                 <div className="text-center">
                   <MapPin className="w-16 h-16 text-primary-600 mx-auto mb-2" />
                   <p className="text-dark-600">Google Maps entegrasyonu burada olacak</p>
-                  <p className="text-sm text-dark-500">Kadıköy, İstanbul</p>
+                  <p className="text-sm text-dark-500">Altınordu, Ordu</p>
                 </div>
               </div>
             </div>

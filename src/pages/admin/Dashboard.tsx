@@ -35,7 +35,7 @@ export default function Dashboard() {
     const statusConfig = {
       pending: { label: 'Bekliyor', color: 'bg-yellow-100 text-yellow-800' },
       preparing: { label: 'Hazırlanıyor', color: 'bg-primary-100 text-primary-800' },
-      shipped: { label: 'Kargoda', color: 'bg-primary-100 text-primary-800' },
+      shipped: { label: 'Yolda', color: 'bg-primary-100 text-primary-800' },
       delivered: { label: 'Teslim Edildi', color: 'bg-green-100 text-green-800' },
       cancelled: { label: 'İptal', color: 'bg-red-100 text-red-800' },
       returned: { label: 'İade', color: 'bg-orange-100 text-orange-800' },
@@ -52,7 +52,7 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+        <h1 className="text-3xl font-bold text-gray-900">Ana Sayfa</h1>
         <p className="text-gray-600 mt-1">Hoş geldiniz! İşte bugünün özeti.</p>
       </div>
 

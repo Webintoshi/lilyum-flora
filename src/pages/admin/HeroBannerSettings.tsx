@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react'
-import { Plus, Edit, Trash2, Save, Image as ImageIcon, Eye, EyeOff, Check, X } from 'lucide-react'
+import { Plus, Edit, Trash2, Save, Image as ImageIcon, Eye, EyeOff, Check, X, Upload } from 'lucide-react'
 import { useAdminStore } from '@/store/adminStore'
 import type { HeroBanner } from '@/types'
 
 export default function HeroBannerSettings() {
-  const { heroBanners, fetchHeroBanners, createHeroBanner, updateHeroBanner, deleteHeroBanner } = useAdminStore()
+  const { heroBanners, fetchHeroBanners, createHeroBanner, updateHeroBanner, deleteHeroBanner, uploadFile } = useAdminStore()
   const [loading, setLoading] = useState(false)
   const [editingBanner, setEditingBanner] = useState<HeroBanner | null>(null)
   const [previewUrl, setPreviewUrl] = useState('')
+  const [uploadingMobile, setUploadingMobile] = useState(false)
+  const [uploadingDesktop, setUploadingDesktop] = useState(false)
 
   const [formData, setFormData] = useState({
     title: '',
@@ -62,7 +64,7 @@ export default function HeroBannerSettings() {
     }
 
     if (editingBanner) {
-      await updateHeroBanner(editingBanner.id, bannerData)
+      await updateHeroBanner({ ...editingBanner, ...bannerData })
     } else {
       await createHeroBanner(bannerData)
     }
@@ -78,7 +80,7 @@ export default function HeroBannerSettings() {
   }
 
   const handleToggleActive = async (banner: HeroBanner) => {
-    await updateHeroBanner(banner.id, { isActive: !banner.isActive })
+    await updateHeroBanner({ ...banner, isActive: !banner.isActive })
   }
 
   return (
@@ -133,39 +135,101 @@ export default function HeroBannerSettings() {
             </div>
 
             <div>
-              <label htmlFor="mobileImage" className="block text-sm font-medium text-gray-700 mb-2">
-                Mobil Görsel URL *
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Mobil Görsel *
               </label>
-              <input
-                id="mobileImage"
-                type="text"
-                value={formData.mobileImage}
-                onChange={(e) => {
-                  setFormData({ ...formData, mobileImage: e.target.value })
-                  setPreviewUrl(e.target.value)
-                }}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                placeholder="https://example.com/hero-banner.jpg"
-                required
-              />
+              <div className="flex gap-4">
+                <div className="flex-1">
+                  <label htmlFor="mobileImageFile" className="block">
+                    <span className="sr-only">Mobil görsel dosyası seç</span>
+                    <div className="flex items-center justify-center w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-primary-500 hover:bg-primary-50 transition-colors">
+                      <Upload className="w-5 h-5 text-gray-400 mr-2" />
+                      <span className="text-sm text-gray-600">
+                        {uploadingMobile ? 'Yükleniyor...' : 'Dosya seç'}
+                      </span>
+                    </div>
+                  </label>
+                  <input
+                    id="mobileImageFile"
+                    type="file"
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0]
+                      if (!file) return
+                      setUploadingMobile(true)
+                      try {
+                        const url = await uploadFile(file)
+                        setFormData(prev => ({ ...prev, mobileImage: url }))
+                        setPreviewUrl(url)
+                      } catch (err) {
+                        console.error('Görsel yükleme hatası:', err)
+                      } finally {
+                        setUploadingMobile(false)
+                      }
+                    }}
+                    className="hidden"
+                    disabled={uploadingMobile}
+                  />
+                </div>
+                {formData.mobileImage && (
+                  <div className="w-24 h-16 flex items-center justify-center bg-white border border-gray-200 rounded-lg overflow-hidden">
+                    <img
+                      src={formData.mobileImage}
+                      alt="Mobil Görsel Preview"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+              </div>
             </div>
 
             <div>
-              <label htmlFor="desktopImage" className="block text-sm font-medium text-gray-700 mb-2">
-                Masaüstü Görsel URL *
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Masaüstü Görsel *
               </label>
-              <input
-                id="desktopImage"
-                type="text"
-                value={formData.desktopImage}
-                onChange={(e) => {
-                  setFormData({ ...formData, desktopImage: e.target.value })
-                  setPreviewUrl(e.target.value)
-                }}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                placeholder="https://example.com/hero-banner-desktop.jpg"
-                required
-              />
+              <div className="flex gap-4">
+                <div className="flex-1">
+                  <label htmlFor="desktopImageFile" className="block">
+                    <span className="sr-only">Masaüstü görsel dosyası seç</span>
+                    <div className="flex items-center justify-center w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-primary-500 hover:bg-primary-50 transition-colors">
+                      <Upload className="w-5 h-5 text-gray-400 mr-2" />
+                      <span className="text-sm text-gray-600">
+                        {uploadingDesktop ? 'Yükleniyor...' : 'Dosya seç'}
+                      </span>
+                    </div>
+                  </label>
+                  <input
+                    id="desktopImageFile"
+                    type="file"
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0]
+                      if (!file) return
+                      setUploadingDesktop(true)
+                      try {
+                        const url = await uploadFile(file)
+                        setFormData(prev => ({ ...prev, desktopImage: url }))
+                        setPreviewUrl(url)
+                      } catch (err) {
+                        console.error('Görsel yükleme hatası:', err)
+                      } finally {
+                        setUploadingDesktop(false)
+                      }
+                    }}
+                    className="hidden"
+                    disabled={uploadingDesktop}
+                  />
+                </div>
+                {formData.desktopImage && (
+                  <div className="w-24 h-16 flex items-center justify-center bg-white border border-gray-200 rounded-lg overflow-hidden">
+                    <img
+                      src={formData.desktopImage}
+                      alt="Masaüstü Görsel Preview"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+              </div>
             </div>
 
             <div>
@@ -225,48 +289,47 @@ export default function HeroBannerSettings() {
 
         <div className="space-y-4">
           {heroBanners.map((banner) => (
-              <div
-                key={banner.id}
-                className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow"
-              >
-                <div className="relative">
-                  <img src={banner.desktopImage} alt={banner.title} className="w-full h-48 object-cover" />
-                  <div className="absolute top-2 right-2 flex gap-2">
-                    <button
-                      onClick={() => handleToggleActive(banner)}
-                      className={`p-2 rounded-lg transition-colors ${
-                        banner.isActive ? 'bg-green-500 text-white' : 'bg-gray-500 text-white'
+            <div
+              key={banner.id}
+              className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow"
+            >
+              <div className="relative">
+                <img src={banner.desktopImage} alt={banner.title} className="w-full h-48 object-cover" />
+                <div className="absolute top-2 right-2 flex gap-2">
+                  <button
+                    onClick={() => handleToggleActive(banner)}
+                    className={`p-2 rounded-lg transition-colors ${banner.isActive ? 'bg-green-500 text-white' : 'bg-gray-500 text-white'
                       }`}
-                      title={banner.isActive ? 'Aktif' : 'Pasif'}
-                    >
-                      {banner.isActive ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                    </button>
-                    <button
-                      onClick={() => handleEdit(banner)}
-                      className="p-2 bg-white rounded-lg hover:bg-gray-100 transition-colors"
-                    >
-                      <Edit className="w-4 h-4 text-primary-600" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(banner.id)}
-                      className="p-2 bg-white rounded-lg hover:bg-red-50 transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4 text-red-600" />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="p-4">
-                  <h3 className="font-bold text-gray-900 mb-1">{banner.title}</h3>
-                  {banner.subtitle && <p className="text-sm text-gray-500">{banner.subtitle}</p>}
-                  <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
-                    <span className={banner.isActive ? 'text-green-600' : 'text-red-600'}>
-                      {banner.isActive ? '✓ Aktif' : '✗ Pasif'}
-                    </span>
-                  </div>
+                    title={banner.isActive ? 'Aktif' : 'Pasif'}
+                  >
+                    {banner.isActive ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                  </button>
+                  <button
+                    onClick={() => handleEdit(banner)}
+                    className="p-2 bg-white rounded-lg hover:bg-gray-100 transition-colors"
+                  >
+                    <Edit className="w-4 h-4 text-primary-600" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(banner.id)}
+                    className="p-2 bg-white rounded-lg hover:bg-red-50 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4 text-red-600" />
+                  </button>
                 </div>
               </div>
-            ))}
+
+              <div className="p-4">
+                <h3 className="font-bold text-gray-900 mb-1">{banner.title}</h3>
+                {banner.subtitle && <p className="text-sm text-gray-500">{banner.subtitle}</p>}
+                <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
+                  <span className={banner.isActive ? 'text-green-600' : 'text-red-600'}>
+                    {banner.isActive ? '✓ Aktif' : '✗ Pasif'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 

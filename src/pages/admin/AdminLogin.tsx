@@ -102,9 +102,7 @@ export default function AdminLogin() {
           </div>
         </div>
 
-        <div className="mt-6 text-center text-sm text-gray-500">
-          <p>Varsayılan: webintoshi@gmail.com / 06122021Kam.</p>
-        </div>
+
       </div>
     </div>
   )

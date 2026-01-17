@@ -1,294 +1,378 @@
-import { useState, useEffect } from "react";
-import { ArrowRight, Heart, Star, Gift, ShoppingBag, Truck, Clock, Shield, CheckCircle, Facebook, Instagram, Twitter, MapPin, Phone, Mail } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { ArrowRight, Star, Truck, Clock, Shield, ChevronLeft, ChevronRight } from "lucide-react";
 import SizeCarousel from "@/components/SizeCarousel";
+import FlowerCareGuide from "@/components/FlowerCareGuide";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import ProductCard from "@/components/ProductCard";
+import SEO from "@/components/SEO"; // Added SEO import
 import { useCartStore } from "@/store/cartStore";
 import { useWishlistStore } from "@/store/wishlistStore";
+import { useAdminStore } from "@/store/adminStore";
 import { useNavigate } from "react-router-dom";
-import type { HeroBanner, Category } from "@/types";
-import { supabase } from "@/lib/supabase";
+
+import type { HeroBanner, Category, Product } from "@/types";
+import { db } from "@/lib/firebase";
+import { collection, query, where, orderBy, limit, getDocs } from "firebase/firestore";
 
 export default function Home() {
   const navigate = useNavigate();
-  const { addToCart, getTotalItems } = useCartStore();
-  const { addToWishlist, items: wishlistItems } = useWishlistStore();
+  const { addToCart } = useCartStore();
+  const { addToWishlist } = useWishlistStore();
+  const { sizeBanners, fetchSizeBanners, pageSEO } = useAdminStore();
+
+  const homeSEO = pageSEO?.find(p => p.page === 'home');
+
   const [heroBanner, setHeroBanner] = useState<HeroBanner | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [addToCartId, setAddToCartId] = useState<number | null>(null);
+
+  // Derived Banners
+  const mainBanner = sizeBanners.find(b => b.id === 'home-main');
+  const topSideBanner = sizeBanners.find(b => b.id === 'home-right-top');
+  const bottomSideBanner = sizeBanners.find(b => b.id === 'home-right-bottom');
 
   useEffect(() => {
-    const fetchHeroBanner = async () => {
+    fetchSizeBanners();
+  }, [fetchSizeBanners]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+  const [isLoadingHero, setIsLoadingHero] = useState(true);
+  const [isLoadingCategories, setIsLoadingCategories] = useState(true);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const scroll = (direction: 'left' | 'right') => {
+    if (scrollRef.current) {
+      const { current } = scrollRef;
+      const scrollAmount = direction === 'left' ? -300 : 300;
+      current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
+  };
+
+  // Fetch Hero Banner
+  useEffect(() => {
+    const fetchHero = async () => {
       try {
-        const { data, error } = await supabase
-          .from('hero_banners')
-          .select('*')
-          .eq('is_active', true)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
-        
-        if (error) throw error;
-        setHeroBanner(data);
-      } catch (error) {
-        console.error('Hero banner fetch error:', error);
+        const q = query(collection(db, 'heroBanners'), where('isActive', '==', true), orderBy('createdAt', 'desc'), limit(1));
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          const doc = snap.docs[0];
+          setHeroBanner({ id: doc.id, ...doc.data() } as unknown as HeroBanner);
+        } else {
+          console.log("No hero banner found");
+        }
+      } catch (err) {
+        console.warn("Hero fetch failed", err);
       } finally {
-        setIsLoading(false);
+        setIsLoadingHero(false);
       }
     };
-
-    const fetchCategories = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('categories')
-          .select('*')
-          .eq('is_active', true)
-          .order('name', { ascending: true });
-        
-        if (error) throw error;
-        setCategories(data || []);
-      } catch (error) {
-        console.error('Categories fetch error:', error);
-      }
-    };
-
-    fetchHeroBanner();
-    fetchCategories();
+    fetchHero();
   }, []);
 
-  const handleAddToWishlist = (item: any, event?: any) => {
-    console.log('Favoriye ekleniyor:', item);
-    addToWishlist(item);
-    navigate('/wishlist');
-  };
+  // Fetch Categories
+  useEffect(() => {
+    const fetchCats = async () => {
+      try {
+        const q = query(collection(db, 'categories'), where('isActive', '==', true));
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          const cats: Category[] = [];
+          snap.forEach(d => cats.push({ id: d.id, ...d.data() } as unknown as Category));
+          setCategories(cats);
+        }
+      } catch (err) {
+        console.warn("Categories fetch failed", err);
+      } finally {
+        setIsLoadingCategories(false);
+      }
+    };
+    fetchCats();
+  }, []);
 
-  const handleAddToCart = (product: any, event?: any) => {
-    addToCart({ ...product, quantity: 1 }, event);
-    setAddToCartId(product.id);
-    setTimeout(() => setAddToCartId(null), 1000);
-  };
-  
+  // Fetch Featured Products
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const q = query(collection(db, 'products'), where('isActive', '==', true), limit(20));
+        const snap = await getDocs(q);
+        const prods: Product[] = [];
+        snap.forEach(d => prods.push({ id: d.id, ...d.data() } as unknown as Product));
+        setFeaturedProducts(prods);
+      } catch (err) {
+        console.warn("Products fetch failed", err);
+      } finally {
+        setIsLoadingProducts(false);
+      }
+    };
+    fetchProducts();
+  }, []);
+
+  // Skeletons
+  const HeroSkeleton = () => (
+    <div className="animate-pulse grid grid-cols-1 lg:grid-cols-3 gap-6 h-auto lg:h-[450px]">
+      <div className="lg:col-span-2 bg-gray-200 rounded-2xl h-[500px] md:h-auto"></div>
+      <div className="grid grid-cols-1 gap-6">
+        <div className="bg-gray-200 rounded-2xl h-full min-h-[200px]"></div>
+        <div className="bg-gray-200 rounded-2xl h-full min-h-[200px]"></div>
+      </div>
+    </div>
+  );
+
+  const CategoriesSkeleton = () => (
+    <div className="flex gap-4 md:gap-8 overflow-hidden px-2 py-2">
+      {[1, 2, 3, 4, 5, 6].map(i => (
+        <div key={i} className="flex flex-col items-center gap-3 min-w-[80px] md:min-w-[100px]">
+          <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-gray-200 animate-pulse"></div>
+          <div className="w-16 h-4 bg-gray-200 rounded animate-pulse"></div>
+        </div>
+      ))}
+    </div>
+  );
+
+  const ProductsSkeleton = () => (
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
+      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(i => (
+        <div key={i} className="bg-white rounded-xl border border-gray-100 overflow-hidden h-[350px] animate-pulse">
+          <div className="bg-gray-200 h-[250px] w-full"></div>
+          <div className="p-4 space-y-2">
+            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
+
   return (
-    <div className="min-h-screen bg-neutral-50">
+    <div className="min-h-screen bg-white font-sans selection:bg-primary-100">
+      <SEO
+        title={homeSEO?.title || "Ana Sayfa"}
+        description={homeSEO?.description}
+        keywords={homeSEO?.keywords}
+        image={homeSEO?.image}
+        canonical="/"
+      />
       <Header />
 
       <main>
-        {isLoading ? (
-          <section className="relative w-full h-[75vh] md:h-[85vh] overflow-hidden bg-neutral-200 animate-pulse">
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center">
-                <div className="w-16 h-16 border-4 border-primary-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                <p className="text-dark-600">Yükleniyor...</p>
-              </div>
-            </div>
-          </section>
-        ) : heroBanner ? (
-          <section className="relative w-full h-[85vh] md:h-[90vh] overflow-hidden">
-            <picture className="w-full h-full">
-              <source media="(max-width: 768px)" srcSet={heroBanner.mobileImage} />
-              <img 
-                src={heroBanner.desktopImage} 
-                alt="Taze çiçekler" 
-                className="w-full h-full object-cover"
-              />
-            </picture>
-            
-            <div 
-              className="absolute inset-0 flex flex-col items-center justify-center px-4"
-              style={{ backgroundColor: `rgba(0, 0, 0, ${heroBanner.overlayOpacity || 0.45})` }}
-            >
-              <div className="max-w-4xl mx-auto text-center space-y-6">
-                <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white leading-tight">
-                  {heroBanner.title}
-                </h1>
-                
-                {heroBanner.subtitle && (
-                  <p className="text-lg md:text-xl text-white/90 max-w-2xl mx-auto leading-relaxed">
-                    {heroBanner.subtitle}
-                  </p>
-                )}
-                
-                <div className="flex flex-col sm:flex-row gap-4 items-center justify-center pt-4">
-                  <a 
-                    onClick={(e) => {
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      window.dispatchEvent(new CustomEvent('magic-dust', {
-                        detail: {
-                          x: rect.left + rect.width / 2,
-                          y: rect.top + rect.height / 2,
-                        },
-                      }));
-                    }}
-                    href="/catalog" 
-                    className="group inline-flex items-center justify-center px-8 py-4 text-base md:text-lg font-bold text-white bg-primary-600 rounded-full shadow-xl hover:shadow-2xl hover:bg-primary-700 transition-all duration-300 hover:scale-105"
-                  >
-                    Alışverişe Başla
-                    <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
-                  </a>
-                  
-                  <a 
-                    onClick={(e) => {
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      window.dispatchEvent(new CustomEvent('magic-dust', {
-                        detail: {
-                          x: rect.left + rect.width / 2,
-                          y: rect.top + rect.height / 2,
-                        },
-                      }));
-                    }}
-                    href="/gift-finder" 
-                    className="group inline-flex items-center justify-center px-8 py-4 text-base md:text-lg font-bold text-white bg-white/10 backdrop-blur-sm border-2 border-white rounded-full shadow-xl hover:shadow-2xl hover:bg-white hover:text-dark-900 transition-all duration-300"
-                  >
-                    <Gift className="mr-2 w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
-                    Hediye Bulucu
-                  </a>
+        {/* TOP CATEGORY STRIP */}
+        <div className="bg-white py-6 border-b border-gray-100">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative group">
+            {isLoadingCategories ? (
+              <CategoriesSkeleton />
+            ) : categories.length > 0 ? (
+              <>
+                <button onClick={() => scroll('left')} className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white shadow-md rounded-full items-center justify-center text-gray-400 hover:text-primary-600 border border-gray-100 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <ChevronLeft className="w-6 h-6" />
+                </button>
+                <div ref={scrollRef} className="flex gap-4 md:gap-8 overflow-x-auto no-scrollbar scroll-smooth px-2 py-2">
+                  {categories.map((cat) => (
+                    <div key={cat.id} onClick={() => navigate(`/catalog?category=${cat.slug}`)} className="flex flex-col items-center gap-3 cursor-pointer min-w-[80px] md:min-w-[100px] flex-shrink-0 group/item">
+                      <div className="w-20 h-20 md:w-24 md:h-24 rounded-full p-1 bg-blue-50 border border-transparent group-hover/item:border-primary-200 transition-colors overflow-hidden">
+                        {/* Category image fallback handled by browser or could add onError */}
+                        <img src={cat.image || "https://images.unsplash.com/photo-1596627702842-8703f47c3eb9?q=80&w=200"} alt={cat.name} className="w-full h-full object-cover rounded-full" onError={(e) => (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1596627702842-8703f47c3eb9?q=80&w=200"} />
+                      </div>
+                      <span className="text-xs md:text-sm font-medium text-gray-700 text-center leading-tight group-hover/item:text-primary-600 transition-colors">{cat.name}</span>
+                    </div>
+                  ))}
+                </div>
+                <button onClick={() => scroll('right')} className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white shadow-md rounded-full items-center justify-center text-gray-400 hover:text-primary-600 border border-gray-100 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <ChevronRight className="w-6 h-6" />
+                </button>
+              </>
+            ) : null}
+          </div>
+        </div>
+
+        {/* HERO SECTION */}
+        <section className="bg-white py-4 md:py-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            {isLoadingHero ? (
+              <HeroSkeleton />
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-auto lg:h-[450px]">
+                {/* Main Banner */}
+                <div
+                  className="lg:col-span-2 relative rounded-2xl overflow-hidden cursor-pointer bg-[#f4f6ec] flex flex-col-reverse md:flex-row items-center h-[500px] md:h-auto group"
+                  onClick={() => navigate(mainBanner?.link || '/catalog')}
+                >
+                  <div className="w-full md:w-1/2 p-6 md:p-12 z-10 flex flex-col justify-center items-start h-1/2 md:h-full relative">
+                    <h2 className="text-3xl md:text-5xl font-bold text-[#5c632e] mb-4 leading-tight">
+                      {mainBanner?.title || 'Yılın En taze Çiçekleri'}
+                    </h2>
+                    <p className="text-[#5c632e]/80 text-lg mb-8">
+                      {mainBanner?.subtitle || 'Doğadan gelen zarafet, kapınıza gelsin.'}
+                    </p>
+                    <button className="bg-[#5c632e] text-white px-8 py-3 rounded-lg font-bold hover:bg-[#485626] transition-colors shadow-lg shadow-[#5c632e]/20">
+                      {mainBanner?.buttonText || 'ALIŞVERİŞE BAŞLA'}
+                    </button>
+                  </div>
+                  <div className="relative w-full md:absolute md:right-0 md:bottom-0 md:top-0 md:w-3/5 h-1/2 md:h-full transition-transform duration-700 group-hover:scale-105">
+                    <img
+                      src={mainBanner?.image || "https://images.unsplash.com/photo-1563241527-94d5b7580e66?q=80&w=800"}
+                      className="w-full h-full object-cover object-center md:mask-image-gradient"
+                      alt={mainBanner?.title || "Hero"}
+                      onError={(e) => (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1563241527-94d5b7580e66?q=80&w=800"}
+                      style={{ maskImage: window.innerWidth > 768 ? 'linear-gradient(to right, transparent, black 20%)' : 'none' }}
+                    />
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-6 md:gap-12 pt-8">
-                  <div className="flex flex-col items-center text-white">
-                    <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mb-2">
-                      <Truck className="w-6 h-6" />
+                {/* Side Banners */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 lg:grid-rows-2 gap-4 lg:gap-6 h-auto lg:h-full mt-4 lg:mt-0">
+                  <div
+                    className="relative rounded-2xl overflow-hidden cursor-pointer bg-[#fbfbf9] flex items-center justify-between p-6 group"
+                    onClick={() => navigate(topSideBanner?.link || '/catalog?category=buketler')}
+                  >
+                    <div className="w-1/2 z-10">
+                      <h3 className="text-2xl font-bold text-[#5c632e] mb-4">
+                        {topSideBanner?.title || 'Taptaze Buketler'}
+                      </h3>
+                      <button className="bg-[#5c632e] text-white text-xs font-bold px-4 py-2 rounded">
+                        {topSideBanner?.buttonText || 'HEMEN İNCELE'}
+                      </button>
                     </div>
-                    <p className="text-sm font-semibold">60 Dakikada</p>
-                    <p className="text-xs text-white/80">Teslimat</p>
+                    <div className="absolute right-0 bottom-0 top-0 w-1/2 transition-transform duration-700 group-hover:scale-105 origin-right">
+                      <img
+                        src={topSideBanner?.image || "https://images.unsplash.com/photo-1596627702842-8703f47c3eb9?q=80&w=400"}
+                        className="w-full h-full object-cover"
+                        alt={topSideBanner?.title || "Buketler"}
+                        onError={(e) => (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1596627702842-8703f47c3eb9?q=80&w=400"}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-r from-[#fbfbf9] to-transparent"></div>
+                    </div>
                   </div>
-                  <div className="flex flex-col items-center text-white">
-                    <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mb-2">
-                      <Shield className="w-6 h-6" />
+
+                  <div
+                    className="relative rounded-2xl overflow-hidden cursor-pointer bg-[#fbfbf9] flex items-center justify-between p-6 group"
+                    onClick={() => navigate(bottomSideBanner?.link || '/catalog?category=cok-satanlar')}
+                  >
+                    <div className="w-1/2 z-10">
+                      <h3 className="text-2xl font-bold text-[#5c632e] mb-4">
+                        {bottomSideBanner?.title || 'Çok Satan Çiçekler'}
+                      </h3>
+                      <button className="bg-[#5c632e] text-white text-xs font-bold px-4 py-2 rounded">
+                        {bottomSideBanner?.buttonText || 'HEMEN İNCELE'}
+                      </button>
                     </div>
-                    <p className="text-sm font-semibold">%100 Taze</p>
-                    <p className="text-xs text-white/80">Garantisi</p>
-                  </div>
-                  <div className="flex flex-col items-center text-white">
-                    <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mb-2">
-                      <Clock className="w-6 h-6" />
+                    <div className="absolute right-0 bottom-0 top-0 w-1/2 transition-transform duration-700 group-hover:scale-105 origin-right">
+                      <img
+                        src={bottomSideBanner?.image || "https://images.unsplash.com/photo-1518709414768-a8c981a45e5d?q=80&w=400"}
+                        className="w-full h-full object-cover"
+                        alt={bottomSideBanner?.title || "Çok Satanlar"}
+                        onError={(e) => (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1518709414768-a8c981a45e5d?q=80&w=400"}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-r from-[#fbfbf9] to-transparent"></div>
                     </div>
-                    <p className="text-sm font-semibold">7/24</p>
-                    <p className="text-xs text-white/80">Destek</p>
                   </div>
                 </div>
               </div>
-            </div>
-          </section>
-        ) : null}
-
-        <section className="py-16 px-4 md:px-8 bg-gradient-to-b from-neutral-50 to-white">
-          <div className="max-w-7xl mx-auto">
-            <div className="flex items-center justify-between mb-10">
-              <div>
-                <h2 className="text-3xl md:text-4xl font-bold text-dark-900 mb-2">En Çok Satanlar</h2>
-                <p className="text-dark-600">En popüler ve beğenilen ürünlerimiz</p>
-              </div>
-              <a href="/catalog" className="hidden md:flex items-center gap-2 px-6 py-3 bg-white border-2 border-primary-600 rounded-full font-semibold text-primary-600 hover:bg-primary-50 transition-colors">
-                Tümünü Görüntüle
-                <ArrowRight className="w-5 h-5" />
-              </a>
-            </div>
-
-            <div className="text-center py-16">
-              <p className="text-dark-600 text-lg">Ürünler admin panelinden yüklenecek</p>
-            </div>
-
-            <div className="mt-8 md:hidden text-center">
-              <a href="/catalog" className="inline-flex items-center gap-2 px-6 py-3 bg-white border-2 border-primary-600 rounded-full font-semibold text-primary-600 hover:bg-primary-50 transition-colors">
-                Tümünü Görüntüle
-                <ArrowRight className="w-5 h-5" />
-              </a>
-            </div>
+            )}
           </div>
         </section>
 
-        <section className="py-16 px-4 md:px-8 bg-gradient-to-r from-primary-600 to-primary-700">
-          <div className="max-w-7xl mx-auto">
-            <div className="grid md:grid-cols-3 gap-8 text-white">
-              <div className="text-center md:text-left">
-                <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mx-auto md:mx-0 mb-4">
-                  <Truck className="w-8 h-8" />
+
+
+        {/* FEATURES BANNER */}
+        <div className="w-full border-y border-gray-100 bg-white mb-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              <div className="flex items-center gap-3">
+                <Truck className="w-8 h-8 text-primary-600" />
+                <div>
+                  <div className="font-bold text-gray-800 text-sm">Aynı Gün Teslimat</div>
+                  <div className="text-xs text-gray-500">Ordu içi aynı gün</div>
                 </div>
-                <h3 className="text-2xl font-bold mb-2">Hızlı Teslimat</h3>
-                <p className="text-white/90 text-base">Siparişleriniz 60 dakika içinde kapınızda</p>
               </div>
-              <div className="text-center md:text-left">
-                <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mx-auto md:mx-0 mb-4">
-                  <Shield className="w-8 h-8" />
+              <div className="flex items-center gap-3">
+                <Shield className="w-8 h-8 text-primary-600" />
+                <div>
+                  <div className="font-bold text-gray-800 text-sm">Güvenli Ödeme</div>
+                  <div className="text-xs text-gray-500">256-bit SSL koruması</div>
                 </div>
-                <h3 className="text-2xl font-bold mb-2">%100 Taze Garantisi</h3>
-                <p className="text-white/90 text-base">Tüm çiçeklerimiz günlük olarak taze olarak hazırlanır</p>
               </div>
-              <div className="text-center md:text-left">
-                <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mx-auto md:mx-0 mb-4">
-                  <Phone className="w-8 h-8" />
+              <div className="flex items-center gap-3">
+                <Star className="w-8 h-8 text-primary-600" />
+                <div>
+                  <div className="font-bold text-gray-800 text-sm">Müşteri Memnuniyeti</div>
+                  <div className="text-xs text-gray-500">%100 İade Garantisi</div>
                 </div>
-                <h3 className="text-2xl font-bold mb-2">7/24 Müşteri Desteği</h3>
-                <p className="text-white/90 text-base">Her türlü sorunuz için yanınızdayız</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <Clock className="w-8 h-8 text-primary-600" />
+                <div>
+                  <div className="font-bold text-gray-800 text-sm">7/24 Destek</div>
+                  <div className="text-xs text-gray-500">Canlı destek hattı</div>
+                </div>
               </div>
             </div>
           </div>
-        </section>
+        </div>
 
-        <section className="py-16 px-4 md:px-8 bg-white">
-          <div className="max-w-7xl mx-auto">
+        {/* PRODUCTS GRID */}
+        <section className="py-8 bg-white px-4 sm:px-6 lg:px-8">
+          <div className="max-w-[1400px] mx-auto">
             <div className="text-center mb-10">
-              <h2 className="text-3xl md:text-4xl font-bold text-dark-900 mb-3">Bizimle İletişime Geçin</h2>
-              <p className="text-dark-600 text-base">Her türlü sorunuz için yanınızdayız</p>
+              <h2 className="text-2xl md:text-3xl font-bold text-gray-800">Hızlı Çiçek Siparişi: Dakikalar İçinde Sevdiklerine Online Çiçek ve Hediye Gönder!</h2>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-6">
-              <a href="#" className="group bg-neutral-50 hover:bg-primary-50 rounded-2xl p-6 text-center transition-all duration-300 border border-neutral-100 hover:border-primary-200">
-                <div className="w-16 h-16 bg-primary-100 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                  <Phone className="w-8 h-8 text-primary-600" />
-                </div>
-                <h3 className="font-bold text-dark-900 mb-2">Telefon</h3>
-                <p className="text-dark-600">+90 555 123 4567</p>
-              </a>
-              <a href="#" className="group bg-neutral-50 hover:bg-primary-50 rounded-2xl p-6 text-center transition-all duration-300 border border-neutral-100 hover:border-primary-200">
-                <div className="w-16 h-16 bg-primary-100 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                  <Mail className="w-8 h-8 text-primary-600" />
-                </div>
-                <h3 className="font-bold text-dark-900 mb-2">E-posta</h3>
-                <p className="text-dark-600">info@lilyumflora.com</p>
-              </a>
-              <a href="#" className="group bg-neutral-50 hover:bg-primary-50 rounded-2xl p-6 text-center transition-all duration-300 border border-neutral-100 hover:border-primary-200">
-                <div className="w-16 h-16 bg-primary-100 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                  <MapPin className="w-8 h-8 text-primary-600" />
-                </div>
-                <h3 className="font-bold text-dark-900 mb-2">Adres</h3>
-                <p className="text-dark-600">İstanbul, Türkiye</p>
-              </a>
-            </div>
+            {isLoadingProducts ? (
+              <ProductsSkeleton />
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
+                {featuredProducts.map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    id={product.id}
+                    name={product.name}
+                    price={product.price}
+                    originalPrice={product.compareAtPrice}
+                    image={product.image || "https://images.unsplash.com/photo-1596627702842-8703f47c3eb9?q=80&w=600"}
+                    rating={4.8}
+                    reviews={120}
+                    category={String(product.categoryId)}
+                    inStock={product.stock}
+                    onAddToCart={() => addToCart({ ...product, quantity: 1 })}
+                    onProductClick={() => navigate(`/product/${product.id}`)}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </section>
 
+        {/* SIZE CAROUSEL */}
         <SizeCarousel
           banners={[
-            {
+            sizeBanners.find(b => b.id === 'small') || {
               id: "small",
-              subtitle: "0.5 - 1 fit.",
-              title: "Küçük Çiçekler",
+              subtitle: "Minimal & Şık",
+              title: "Küçük Boy Sürprizler",
               videoUrl: "https://woodmart.xtemos.com/plants/wp-content/uploads/sites/12/2023/05/plants-banners-video-1-1.mp4",
               posterUrl: "https://woodmart.xtemos.com/plants/wp-content/uploads/sites/12/2023/05/plants-banners-image-1.jpg",
-              link: "/catalog",
+              link: "/catalog?size=small",
             },
-            {
+            sizeBanners.find(b => b.id === 'medium') || {
               id: "medium",
-              subtitle: "1.5 - 2 fit.",
-              title: "Orta Boy Çiçekler",
+              subtitle: "En İdeal Seçim",
+              title: "Orta Boy Aranjmanlar",
               videoUrl: "https://woodmart.xtemos.com/plants/wp-content/uploads/sites/12/2023/05/plants-banners-video-2-1.mp4",
               posterUrl: "https://woodmart.xtemos.com/plants/wp-content/uploads/sites/12/2023/05/plants-banners-image-2.jpg",
-              link: "/catalog",
+              link: "/catalog?size=medium",
             },
-            {
+            sizeBanners.find(b => b.id === 'large') || {
               id: "large",
-              subtitle: "3+ fit.",
-              title: "Büyük Çiçekler",
+              subtitle: "Gösterişli & Büyük",
+              title: "Premium Koleksiyon",
               videoUrl: "https://woodmart.xtemos.com/plants/wp-content/uploads/sites/12/2023/05/plants-banners-video-3-1.mp4",
               posterUrl: "https://woodmart.xtemos.com/plants/wp-content/uploads/sites/12/2023/05/plants-banners-image-3.jpg",
-              link: "/catalog",
+              link: "/catalog?size=large",
             },
-          ]}
+          ] as any[]} // explicit cast if needed or clean up types
         />
-
+        <FlowerCareGuide />
       </main>
 
       <Footer />
